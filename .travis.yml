@@ -1,0 +1,52 @@
+language: cpp
+sudo: required
+compiler:
+  - gcc
+os: linux
+dist: trusty
+
+env:
+  global:
+    - MAKE_THREADS=2
+    - PYTHON_VERSION="2.7"
+    - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
+    - REPOS_DIR="${TRAVIS_BUILD_DIR}/repos"
+    - PETSC_DIR="${DEPS_DIR}/petsc"
+    - PETSC_ARCH="arch-eebo"
+
+# Limit number of commits in cloning
+git:
+  depth: 200
+
+# Dependencies installed as packages
+addons:
+  apt:
+    packages:
+      - cmake
+      - libopenmpi-dev
+      - openmpi-common
+      - openmpi-bin
+      - gfortran
+
+before_install:
+  - echo $LANG
+  - echo $LC_ALL
+
+install:
+  - chmod a+x scripts/travis-install-deps.sh
+  - if [ ! -d ${DEPS_DIR}/libmesh ]; then scripts/travis-install-deps.sh; else echo "Using cached dependencies."; fi
+  - ls -R ${DEPS_DIR}
+
+script:
+  - mkdir build
+  - pushd build
+  - cmake -DLIBMESH_DIR:PATH=${DEPS_DIR}/libmesh -DBUILD_SHARED_LIBS:BOOL=ON ../
+  - make
+
+cache:
+  timeout: 300
+  directories:
+    - ${DEPS_DIR}
+
+notifications:
+  email: false
