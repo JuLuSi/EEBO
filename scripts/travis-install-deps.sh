@@ -1,7 +1,9 @@
 #!/bin/bash
 
-export OMPI_CC=clang
-export OMPI_CXX=clang++
+if [ $CC == "clang" ]; then
+    export OMPI_CC=clang
+    export OMPI_CXX=clang++
+fi
 
 export CC=mpicc
 export CXX=mpicxx
