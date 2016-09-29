@@ -1,5 +1,15 @@
 #!/bin/bash
 
+if [ $CC == "clang" ]; then
+    export OMPI_CC=clang
+    export OMPI_CXX=clang++
+fi
+
+export CC=mpicc
+export CXX=mpicxx
+export FC=mpif90
+export F90=mpif90
+
 mkdir -p repos
 pushd repos
 
