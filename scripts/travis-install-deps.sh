@@ -1,5 +1,8 @@
 #!/bin/bash
 
+export OMPI_CC=clang
+export OMPI_CXX=clang++
+
 export CC=mpicc
 export CXX=mpicxx
 export FC=mpif90
