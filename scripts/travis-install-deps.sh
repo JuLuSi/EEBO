@@ -1,5 +1,10 @@
 #!/bin/bash
 
+export CC=mpicc
+export CXX=mpicxx
+export FC=mpif90
+export F90=mpif90
+
 mkdir -p repos
 pushd repos
 
