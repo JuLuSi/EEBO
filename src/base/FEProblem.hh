@@ -12,26 +12,27 @@
 namespace EEBO {
 
 template<typename T>
-class FEProblem : public EquationSystems
+class FEProblem : public libMesh::EquationSystems
 {
 public:
-  FEProblem(Mesh& mesh);
-  virtual ~FEProblem()
-  {};
+  explicit FEProblem(libMesh::Mesh& mesh);
+  ~FEProblem() override = default;
 
-  void init();
+  void init() override;
   void step();
 
-protected:
+  T& sys();
+
+ protected:
   T* _sys;
   double _dt = 0;
 };
 
 template<typename T>
-FEProblem<T>::FEProblem(Mesh& mesh) :
+FEProblem<T>::FEProblem(libMesh::Mesh& mesh) :
     EquationSystems(mesh)
 {
-  static_assert(std::is_base_of<TransientNonlinearImplicitSystem, T>::value,
+  static_assert(std::is_base_of<libMesh::TransientNonlinearImplicitSystem, T>::value,
                 "FEProblem needs to be instantiated with a type which is inherited from SystemBase");
 
   _sys = &(add_system<T>("sys0"));
@@ -40,8 +41,8 @@ FEProblem<T>::FEProblem(Mesh& mesh) :
 template<typename T>
 void FEProblem<T>::init()
 {
-  EquationSystems::init();
-  EquationSystems::print_info(out);
+  libMesh::EquationSystems::init();
+  libMesh::EquationSystems::print_info(out);
 }
 
 template<typename T>
@@ -51,5 +52,10 @@ void FEProblem<T>::step()
   _sys->solve();
 }
 
+template<typename T>
+T& FEProblem<T>::sys() {
+  return *_sys;
 }
+
+} // namespace EEBO
 #endif

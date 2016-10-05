@@ -7,13 +7,13 @@
 #include "libmesh/parallel_object.h"
 
 namespace EEBO {
-class App : public ParallelObject
+class App : public libMesh::ParallelObject
 {
 
 public:
-  App(const char* infile, Parallel::Communicator& comm);
+  App(const char* infile, libMesh::Parallel::Communicator& comm);
 
-  ~App();
+  ~App() override;
 
   GetPot infile()
   { return _infile; }
@@ -22,6 +22,6 @@ private:
   void displayInfoBanner();
   GetPot _infile;
 };
-}
+}  // namespace EEBO
 
 #endif

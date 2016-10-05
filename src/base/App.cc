@@ -1,6 +1,9 @@
 #include "App.hh"
 
-EEBO::App::App(const char* infile, Parallel::Communicator& comm) :
+using namespace libMesh;
+using namespace EEBO;
+
+App::App(const char* infile, Parallel::Communicator& comm) :
     ParallelObject(comm)
 {
   if (infile != nullptr) {
@@ -9,12 +12,12 @@ EEBO::App::App(const char* infile, Parallel::Communicator& comm) :
   displayInfoBanner();
 }
 
-EEBO::App::~App()
+App::~App()
 {
 
 }
 
-void EEBO::App::displayInfoBanner()
+void App::displayInfoBanner()
 {
   out
       << "--------------------------------------------------------------------------" << std::endl

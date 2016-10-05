@@ -11,6 +11,7 @@
 #include "libmesh/zero_function.h"
 #include "libmesh/equation_systems.h"
 
+using namespace libMesh;
 using namespace EEBO;
 
 HeatTransfer::HeatTransfer(EquationSystems& eqs, const std::string& name, const unsigned int number) :
@@ -22,7 +23,7 @@ HeatTransfer::HeatTransfer(EquationSystems& eqs, const std::string& name, const 
 
   const boundary_id_type all_ids[4] = {0, 1, 2, 3};
   std::set<boundary_id_type> all_bdys(all_ids, all_ids + (2 * 2));
-  std::vector<unsigned int> vars(1, 0);
+  std::vector<unsigned int> vars(1, _temperature_varnum);
   ZeroFunction<Number> zero;
   get_dof_map().add_dirichlet_boundary(DirichletBoundary(all_bdys, vars, &zero));
 
@@ -46,7 +47,7 @@ void HeatTransfer::initialize()
     out << "<<< Initializing HeatTransfer" << std::endl;
 }
 
-void HeatTransfer::jacobian(const NumericVector<Number>& X, SparseMatrix<Number>& J, NonlinearImplicitSystem& S)
+void HeatTransfer::jacobian(const NumericVector<Number>& X, SparseMatrix<Number>& J, NonlinearImplicitSystem& /* S */)
 {
   const DofMap& dof_map = get_dof_map();
   FEType fe_type = dof_map.variable_type(_temperature_varnum);
@@ -90,34 +91,6 @@ void HeatTransfer::jacobian(const NumericVector<Number>& X, SparseMatrix<Number>
       for (unsigned int i = 0; i < phi.size(); i++) {
         for (unsigned int j = 0; j < phi.size(); j++) {
           Je(i, j) += JxW[qp] * (dphi[i][qp] * dphi[j][qp]);
-        }
-      }
-    }
-
-    // The following loops over the sides of the element.
-    // If the element has no neighbor on a side then that
-    // side MUST live on a boundary of the domain.
-    for (unsigned int side = 0; side < elem->n_sides(); side++) {
-      if (elem->neighbor(side) == libmesh_nullptr) {
-        // The value of the shape functions at the quadrature
-        // points.
-        const std::vector<std::vector<Real>>& phi_face = fe_face->get_phi();
-
-        // The Jacobian * Quadrature Weight at the quadrature
-        // points on the face.
-        const std::vector<Real>& JxW_face = fe_face->get_JxW();
-
-        // Compute the shape function values on the element face.
-        fe_face->reinit(elem, side);
-
-        // Loop over the face quadrature points for integration.
-        for (unsigned int qp = 0; qp < qface.n_points(); qp++) {
-          for (unsigned int i = 0; i < phi_face.size(); i++) {
-            for (unsigned int j = 0; j < phi_face.size(); j++) {
-              // Ke(i, j) +=
-              // 	JxW_face[qp] * 1e8 * (phi_face[i][qp] * phi_face[j][qp]);
-            }
-          }
         }
       }
     }
@@ -172,39 +145,6 @@ void HeatTransfer::residual(const NumericVector<Number>& X, NumericVector<Number
         Fe(i) += JxW[qp] * (grad_u * dphi[i][qp] - (1.0 * phi[i][qp]));
       }
     }
-
-    // The following loops over the sides of the element.
-    // If the element has no neighbor on a side then that
-    // side MUST live on a boundary of the domain.
-    for (unsigned int side = 0; side < elem->n_sides(); side++) {
-      if (elem->neighbor(side) == libmesh_nullptr) {
-        // The value of the shape functions at the quadrature
-        // points.
-        const std::vector<std::vector<Real>>& phi_face = fe_face->get_phi();
-
-        // The Jacobian * Quadrature Weight at the quadrature
-        // points on the face.
-        const std::vector<Real>& JxW_face = fe_face->get_JxW();
-
-        // Compute the shape function values on the element face.
-        fe_face->reinit(elem, side);
-
-        // Loop over the face quadrature points for integration.
-        for (unsigned int qp = 0; qp < qface.n_points(); qp++) {
-          Number u = 0;
-
-          for (unsigned int j = 0; j < phi_face.size(); j++) {
-            u += phi_face[j][qp] * X(dof_indices[j]);
-          }
-          // This is the right-hand-side contribution (f),
-          // which has to be subtracted from the current residual
-          for (unsigned int i = 0; i < phi_face.size(); i++) {
-            //Re(i) += JxW_face[qp] * 1e8 * (u - 1.0) * phi_face[i][qp];
-          }
-        }
-      }
-    }
-
     dof_map.constrain_element_vector(Fe, dof_indices);
     F.add_vector(Fe, dof_indices);
   }

@@ -5,7 +5,10 @@
 #include "petscsys.h"
 #endif
 
-EEBO::Init::Init(int argc, char** argv, MPI_Comm COMM_WORLD_IN) :
+using namespace libMesh;
+using namespace EEBO;
+
+Init::Init(int argc, char** argv, MPI_Comm COMM_WORLD_IN) :
     LibMeshInit(argc, argv, COMM_WORLD_IN)
 {
 // Get rid of PETSc error handler.
