@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.2)
 project(EEBO)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-unknown-pragmas")
-
 find_program(CCACHE_FOUND ccache)
 if (CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
@@ -10,23 +8,21 @@ if (CCACHE_FOUND)
 endif (CCACHE_FOUND)
 
 find_package(MPI REQUIRED)
+set(${CMAKE_CXX_COMPILER} ${MPI_CXX_COMPILER})
 
 # Only debug version for now
 set(METHOD dbg)
 
-if (METHOD STREQUAL "dbg")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -felide-constructors \
-    -Wextra -Wno-long-long -Wunused -Wpointer-arith -Wformat -Wparentheses -Woverloaded-virtual -Wno-variadic-macros")
-endif ()
-
 # libMesh
 if (LIBMESH_DIR)
     set(ENV{PKG_CONFIG_PATH} ${LIBMESH_DIR}/lib/pkgconfig)
-endif ()
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBMESH REQUIRED libmesh-${METHOD})
 
-link_directories(${LIBMESH_LIBRARY_DIRS})
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBMESH REQUIRED libmesh-${METHOD})
+
+    add_definitions(${LIBMESH_CFLAGS_OTHER})
+    link_directories(${LIBMESH_LIBRARY_DIRS})
+endif ()
 
 include_directories(
         ${LIBMESH_INCLUDE_DIRS}
@@ -34,7 +30,7 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/src/kernels
         ${CMAKE_CURRENT_SOURCE_DIR}/src/model)
 
-set(LIBS ${LIBMESH_LIBRARIES})
+set(LIBS ${LIBMESH_LIBRARIES} pthread)
 
 set(SOURCE_FILES
         src/base/Init.cc
