@@ -15,7 +15,7 @@ using namespace libMesh;
 using namespace EEBO;
 
 HeatTransfer::HeatTransfer(EquationSystems& eqs, const std::string& name, const unsigned int number) :
-    TransientNonlinearImplicitSystem(eqs, name, number)
+    SystemBase(eqs, name, number)
 {
   _temperature_varnum = add_variable("Temperature", SECOND, LAGRANGE);
 
