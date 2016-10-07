@@ -33,18 +33,32 @@ include_directories(
 set(LIBS ${LIBMESH_LIBRARIES} pthread)
 
 set(SOURCE_FILES
-        src/base/Init.cc
-        src/base/App.cc
-        src/base/FEProblem.hh
-        src/model/HeatTransfer.cc
-        )
+        src/base/Init.cpp
+        src/base/App.cpp
+        src/base/FEProblem.hpp
+        src/model/HeatTransfer.cpp src/base/SystemBase.cpp src/base/SystemBase.hpp)
+
 add_library(eeboCommon ${SOURCE_FILES})
 
 add_executable(fbc_driver
-        src/driver/fbc/fbc.cc)
+        src/driver/fbc/fbc.cpp)
 target_link_libraries(fbc_driver eeboCommon ${LIBS})
 
 message(STATUS "")
 message(STATUS "CXXFLAGS:  ${CMAKE_CXX_FLAGS}")
 message(STATUS "LIBRARIES: ${LIBS}")
 message(STATUS "")
+
+if (ENABLE_TESTING)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests/gtest)
+    enable_testing()
+    include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+
+    add_executable(test_init tests/test_init.cpp)
+    target_link_libraries(test_init gtest gtest_main eeboCommon ${LIBS})
+    add_test(NAME init COMMAND test_init)
+
+    add_executable(test_driver tests/test_driver.cpp)
+    target_link_libraries(test_driver gtest gtest_main eeboCommon ${LIBS})
+    add_test(NAME driver COMMAND test_driver)
+endif ()
