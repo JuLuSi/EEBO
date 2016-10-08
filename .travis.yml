@@ -1,0 +1,42 @@
+language: cpp
+sudo: required
+compiler:
+  - clang
+os: linux
+dist: trusty
+
+env:
+  global:
+    - MAKE_THREADS=2
+    - PYTHON_VERSION="2.7"
+    - STACK_SRC="${TRAVIS_BUILD_DIR}/tmp"
+    - PACKAGES_DIR="${TRAVIS_BUILD_DIR}/opt"
+    - PETSC_DIR="$PACKAGES_DIR/petsc-3.7.4"
+
+# Limit number of commits in cloning
+git:
+  depth: 200
+
+before_install:
+  - echo $LANG
+  - echo $LC_ALL
+
+install:
+  - chmod a+x scripts/travis-install-deps.sh
+  - if [ ! -d ${PACKAGES_DIR}/libmesh ]; then scripts/travis-install-deps.sh; else echo "Using cached dependencies."; fi
+  - scripts/travis-install-deps.sh
+  - ls -R ${PACKAGES_DIR}
+
+script:
+  - mkdir build
+  - pushd build
+  - cmake -DLIBMESH_DIR:PATH=${PACKAGES_DIR}/libmesh -DBUILD_SHARED_LIBS:BOOL=ON ../
+  - make
+
+#cache:
+#  timeout: 300
+#  directories:
+#    - ${PACKAGES_DIR}
+
+notifications:
+  email: false

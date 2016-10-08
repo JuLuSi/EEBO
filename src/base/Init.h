@@ -1,7 +1,7 @@
-#ifndef EEBOINIT_HH
-#define EEBOINIT_HH
+#ifndef EEBO_INIT_HPP
+#define EEBO_INIT_HPP
 
-#include "EEBO.hpp"
+#include "EEBO.h"
 // libMesh
 #include "libmesh/libmesh.h"
 

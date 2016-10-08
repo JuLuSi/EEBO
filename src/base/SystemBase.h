@@ -1,7 +1,7 @@
 #ifndef SYSTEMBASE_HPP
 #define SYSTEMBASE_HPP
 
-#include "EEBO.hpp"
+#include "EEBO.h"
 #include "libmesh/nonlinear_solver.h"
 #include "libmesh/transient_system.h"
 

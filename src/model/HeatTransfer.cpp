@@ -1,4 +1,4 @@
-#include "HeatTransfer.hpp"
+#include "HeatTransfer.h"
 #include "libmesh/dof_map.h"
 #include "libmesh/elem.h"
 #include "libmesh/quadrature.h"

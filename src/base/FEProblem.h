@@ -1,7 +1,7 @@
 #ifndef FEPROBLEM_HH
 #define FEPROBLEM_HH
 
-#include "EEBO.hpp"
+#include "EEBO.h"
 #include "libmesh/mesh.h"
 #include "libmesh/numeric_vector.h"
 #include "libmesh/equation_systems.h"

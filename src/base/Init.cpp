@@ -1,4 +1,4 @@
-#include "Init.hpp"
+#include "Init.h"
 
 // PETSc
 #ifdef LIBMESH_HAVE_PETSC

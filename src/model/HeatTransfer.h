@@ -1,8 +1,8 @@
-#ifndef HEATTRANSFER_HH
-#define HEATTRANSFER_HH
+#ifndef HEATTRANSFER_HPP
+#define HEATTRANSFER_HPP
 
-#include "EEBO.hpp"
-#include "SystemBase.hpp"
+#include "EEBO.h"
+#include "SystemBase.h"
 #include "libmesh/nonlinear_solver.h"
 #include "libmesh/transient_system.h"
 

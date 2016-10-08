@@ -1,8 +1,8 @@
-#include "EEBO.hpp"
-#include "Init.hpp"
-#include "App.hpp"
-#include "FEProblem.hpp"
-#include "HeatTransfer.hpp"
+#include "EEBO.h"
+#include "Init.h"
+#include "App.h"
+#include "FEProblem.h"
+#include "HeatTransfer.h"
 #include "libmesh/mesh_generation.h"
 #include "libmesh/dirichlet_boundaries.h"
 #include "libmesh/zero_function.h"
@@ -14,10 +14,10 @@ using namespace EEBO;
 
 int main(int argc, char** argv)
 {
-  Init init(argc, argv);
-  auto app = std::make_unique<App>(nullptr, init.comm());
+  auto init = std::make_unique<Init>(argc, argv);
+  auto app = std::make_unique<App>(nullptr, init->comm());
 
-  Mesh mesh(init.comm());
+  Mesh mesh(init->comm());
   MeshTools::Generation::build_square(mesh,
                                       10, 10,
                                       -1., 1.,

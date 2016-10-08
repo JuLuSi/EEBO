@@ -1,7 +1,7 @@
-#ifndef EEBOAPP_HH
-#define EEBOAPP_HH
+#ifndef EEBOAPP_HPP
+#define EEBOAPP_HPP
 
-#include "EEBO.hpp"
+#include "EEBO.h"
 // libMesh
 #include "libmesh/getpot.h"
 #include "libmesh/parallel_object.h"

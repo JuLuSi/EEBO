@@ -1,4 +1,4 @@
-#include "SystemBase.hpp"
+#include "SystemBase.h"
 
 using namespace EEBO;
 using namespace libMesh;
