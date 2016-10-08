@@ -8,7 +8,6 @@ if (CCACHE_FOUND)
 endif (CCACHE_FOUND)
 
 find_package(MPI REQUIRED)
-set(${CMAKE_CXX_COMPILER} ${MPI_CXX_COMPILER})
 
 # Only debug version for now
 set(METHOD dbg)
