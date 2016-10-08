@@ -26,7 +26,7 @@ cd $STACK_SRC/mpich-3.2/clang-build
 CC=clang \
 CXX=clang++ \
 FC=gfortran \
-F77=gfortran 1>>build.log
+F77=gfortran
 
 echo "Building mpich"
 make -j $MAKE_THREADS 1>>build.log
@@ -72,9 +72,9 @@ cd $STACK_SRC/petsc-3.7.4
 --FFLAGS='-fPIC' \
 --FCFLAGS='-fPIC' \
 --F90FLAGS='-fPIC' \
---F77FLAGS='-fPIC' 1>>build.log
+--F77FLAGS='-fPIC'
 
-make PETSC_DIR=$STACK_SRC/petsc-3.7.4 PETSC_ARCH=arch-linux2-c-opt all 1>>build.log
+make PETSC_DIR=$STACK_SRC/petsc-3.7.4 PETSC_ARCH=arch-linux2-c-opt all
 make PETSC_DIR=$STACK_SRC/petsc-3.7.4 PETSC_ARCH=arch-linux2-c-opt install 1>>build.log
 make PETSC_DIR=$PACKAGES_DIR/petsc-3.7.4 PETSC_ARCH="" test 1>>build.log
 
@@ -83,6 +83,6 @@ export PETSC_DIR=$PACKAGES_DIR/petsc-3.7.4
 echo "Building libMesh"
 git clone --depth 100 -b v1.0.0 https://github.com/libMesh/libmesh.git $STACK_SRC/libmesh
 cd $STACK_SRC/libmesh
-METHODS="dbg" ./configure --prefix=$PACKAGES_DIR/libmesh 1>>build.log
-make -j $MAKE_THREADS 1>>build.log
+METHODS="dbg" ./configure --prefix=$PACKAGES_DIR/libmesh
+make -j $MAKE_THREADS
 make install 1>>build.log
