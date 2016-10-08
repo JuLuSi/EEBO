@@ -3,7 +3,7 @@
 echo "Setting up dependencies"
 
 echo "APT"
-apt-get -qy install curl automake cmake gfortran clang git valgrind
+sudo apt-get -qy install curl automake cmake gfortran clang git valgrind
 
 cd $STACK_SRC
 echo "Downloading mpich"
