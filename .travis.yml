@@ -24,7 +24,6 @@ before_install:
 install:
   - chmod a+x scripts/travis-install-deps.sh
   - if [ ! -d ${PACKAGES_DIR}/libmesh ]; then scripts/travis-install-deps.sh; else echo "Using cached dependencies."; fi
-  - scripts/travis-install-deps.sh
   - ls -R ${PACKAGES_DIR}
 
 script:
