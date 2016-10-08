@@ -27,6 +27,8 @@ git:
   depth: 200
 
 before_install:
+  - test -n $CC  && unset CC
+  - test -n $CXX && unset CXX
   - echo $LANG
   - echo $LC_ALL
 
@@ -36,6 +38,7 @@ install:
   - ls -R ${PACKAGES_DIR}
 
 script:
+  - chmod a+x scripts/set-env-mpich.sh; scripts/set-env-mpich.sh
   - mkdir build
   - pushd build
   - echo $CC; echo $CXX
