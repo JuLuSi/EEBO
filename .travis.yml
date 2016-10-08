@@ -11,7 +11,7 @@ env:
     - PYTHON_VERSION="2.7"
     - STACK_SRC="${TRAVIS_BUILD_DIR}/tmp"
     - PACKAGES_DIR="${TRAVIS_BUILD_DIR}/opt"
-    - PETSC_DIR="$PACKAGES_DIR/petsc-3.7.4"
+    - PETSC_DIR="${PACKAGES_DIR}/petsc-3.7.4"
 
 addons:
   apt:
@@ -41,8 +41,9 @@ script:
   - chmod a+x scripts/set-env-mpich.sh; scripts/set-env-mpich.sh
   - mkdir build
   - pushd build
-  - CC=$PACKAGES_DIR/mpich-3.2/bin/mpicc CXX=$PACKAGES_DIR/mpich-3.2/bin/mpicxx cmake -DLIBMESH_DIR:PATH=${PACKAGES_DIR}/libmesh -DBUILD_SHARED_LIBS:BOOL=ON ../
-  - make VERBOSE=1
+  - CC=${PACKAGES_DIR}/mpich-3.2/bin/mpicc CXX=${PACKAGES_DIR}/mpich-3.2/bin/mpicxx cmake -DLIBMESH_DIR:PATH=${PACKAGES_DIR}/libmesh -DBUILD_SHARED_LIBS:BOOL=ON ../
+  - make -j $MAKE_THREADS
+  - ./test_main
 
 cache:
   timeout: 300
