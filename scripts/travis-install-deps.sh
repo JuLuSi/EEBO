@@ -1,5 +1,8 @@
 #!/bin/bash
 
+mkdir -p $STACK_SRC
+mkdir -p $PACKAGES_DIR
+
 echo "Setting up dependencies"
 
 echo "APT"
