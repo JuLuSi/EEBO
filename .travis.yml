@@ -13,6 +13,15 @@ env:
     - PACKAGES_DIR="${TRAVIS_BUILD_DIR}/opt"
     - PETSC_DIR="$PACKAGES_DIR/petsc-3.7.4"
 
+addons:
+  apt:
+    packages:
+    - cmake
+    - automake
+    - gfortran
+    - curl
+    - valgrind
+
 # Limit number of commits in cloning
 git:
   depth: 200
@@ -29,7 +38,7 @@ install:
 script:
   - mkdir build
   - pushd build
-  - export PATH=$PACKAGES_DIR/mpich-3.2/bin:$PATH; export CC=mpicc; export CXX=mpicxx; export FC=mpif90; export F90=mpif90
+  - chmod a+x scripts/set-env-mpich.sh; scripts/set-env-mpich.sh
   - cmake -DLIBMESH_DIR:PATH=${PACKAGES_DIR}/libmesh -DBUILD_SHARED_LIBS:BOOL=ON ../
   - make
 
