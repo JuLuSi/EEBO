@@ -41,8 +41,7 @@ script:
   - chmod a+x scripts/set-env-mpich.sh; scripts/set-env-mpich.sh
   - mkdir build
   - pushd build
-  - echo $CC; echo $CXX
-  - cmake -DMPI_C_COMPILER=$PACKAGES_DIR/mpich-3.2/bin/mpicc -DMPI_CXX_COMPILER=$PACKAGES_DIR/mpich-3.2/bin/mpicxx -DLIBMESH_DIR:PATH=${PACKAGES_DIR}/libmesh -DBUILD_SHARED_LIBS:BOOL=ON ../
+  - CC=$PACKAGES_DIR/mpich-3.2/bin/mpicc CXX=$PACKAGES_DIR/mpich-3.2/bin/mpicxx cmake -DLIBMESH_DIR:PATH=${PACKAGES_DIR}/libmesh -DBUILD_SHARED_LIBS:BOOL=ON ../
   - make VERBOSE=1
 
 cache:
