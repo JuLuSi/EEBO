@@ -29,13 +29,15 @@ install:
 script:
   - mkdir build
   - pushd build
+  - export CC=mpicc
+  - export CXX=mpicxx
   - cmake -DLIBMESH_DIR:PATH=${PACKAGES_DIR}/libmesh -DBUILD_SHARED_LIBS:BOOL=ON ../
   - make
 
-#cache:
-#  timeout: 300
-#  directories:
-#    - ${PACKAGES_DIR}
+cache:
+  timeout: 300
+  directories:
+    - ${PACKAGES_DIR}
 
 notifications:
   email: false
