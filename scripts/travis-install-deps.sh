@@ -29,7 +29,7 @@ FC=gfortran \
 F77=gfortran
 
 echo "Building mpich"
-make -j $NUM_PROCS
+make -j $MAKE_THREADS
 make install
 
 export PATH=$PACKAGES_DIR/mpich-3.2/bin:$PATH
@@ -84,5 +84,5 @@ echo "Building libMesh"
 git clone --depth 100 -b v1.0.0 https://github.com/libMesh/libmesh.git $STACK_SRC/libmesh
 cd $STACK_SRC/libmesh
 METHODS="dbg" ./configure --prefix=$PACKAGES_DIR/libmesh
-make -j ${NUM_PROCS}
+make -j $MAKE_THREADS
 make install
