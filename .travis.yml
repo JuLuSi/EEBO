@@ -41,7 +41,7 @@ script:
   - chmod a+x scripts/set-env-mpich.sh; scripts/set-env-mpich.sh
   - mkdir build
   - pushd build
-  - CC=${PACKAGES_DIR}/mpich-3.2/bin/mpicc CXX=${PACKAGES_DIR}/mpich-3.2/bin/mpicxx cmake -DLIBMESH_DIR:PATH=${PACKAGES_DIR}/libmesh -DBUILD_SHARED_LIBS:BOOL=ON ../
+  - CC=${PACKAGES_DIR}/mpich-3.2/bin/mpicc CXX=${PACKAGES_DIR}/mpich-3.2/bin/mpicxx cmake -DLIBMESH_DIR:PATH=${PACKAGES_DIR}/libmesh -DBUILD_SHARED_LIBS:BOOL=ON -DENABLE_TESTING:BOOL=ON ../
   - make -j $MAKE_THREADS
   - ./test_main
 
