@@ -36,9 +36,9 @@ install:
   - ls -R ${PACKAGES_DIR}
 
 script:
+  - chmod a+x scripts/set-env-mpich.sh; scripts/set-env-mpich.sh
   - mkdir build
   - pushd build
-  - chmod a+x scripts/set-env-mpich.sh; scripts/set-env-mpich.sh
   - cmake -DLIBMESH_DIR:PATH=${PACKAGES_DIR}/libmesh -DBUILD_SHARED_LIBS:BOOL=ON ../
   - make
 
