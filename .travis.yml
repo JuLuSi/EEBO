@@ -1,6 +1,7 @@
 language: cpp
 sudo: required
 compiler:
+  - gcc
   - clang
 os: linux
 dist: trusty
@@ -31,8 +32,7 @@ before_install:
   - echo $LC_ALL
 
 install:
-  - chmod a+x scripts/travis-install-deps.sh
-  - if [ ! -d ${PACKAGES_DIR}/libmesh ]; then scripts/travis-install-deps.sh; else echo "Using cached dependencies."; fi
+  - if [ ! -d ${PACKAGES_DIR}/libmesh ]; then chmod a+x scripts/travis-install-deps.sh; scripts/travis-install-deps.sh; else echo "Using cached dependencies."; fi
   - ls -R ${PACKAGES_DIR}
 
 script:

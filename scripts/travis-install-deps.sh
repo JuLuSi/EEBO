@@ -16,17 +16,33 @@ tar -xf mpich-3.2.tar.gz -C .
 mkdir $STACK_SRC/mpich-3.2/clang-build
 cd $STACK_SRC/mpich-3.2/clang-build
 
-../configure --prefix=$PACKAGES_DIR/mpich-3.2 \
---enable-shared \
---enable-sharedlibs=clang \
---enable-fast=03 \
---enable-debuginfo \
---enable-totalview \
---enable-two-level-namespace \
-CC=clang \
-CXX=clang++ \
-FC=gfortran \
-F77=gfortran
+if [ "$CXX" == "clang++" ]; then
+    ../configure --prefix=$PACKAGES_DIR/mpich-3.2 \
+    --enable-shared \
+    --enable-sharedlibs=clang \
+    --enable-fast=03 \
+    --enable-debuginfo \
+    --enable-totalview \
+    --enable-two-level-namespace \
+    CC=clang \
+    CXX=clang++ \
+    FC=gfortran \
+    F77=gfortran
+elif [ "$CXX" == "g++" ]; then
+    ../configure --prefix=$PACKAGES_DIR/mpich-3.2 \
+    --enable-shared \
+    --enable-fast=03 \
+    --enable-debuginfo \
+    --enable-totalview \
+    --enable-two-level-namespace \
+    CC=gcc \
+    CXX=g++ \
+    FC=gfortran \
+    F77=gfortran
+else
+    echo "ERROR: unknown compiler"
+    exit 1
+fi
 
 echo "Building mpich"
 make -j $MAKE_THREADS 1>>build.log
