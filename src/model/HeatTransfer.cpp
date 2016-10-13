@@ -15,15 +15,15 @@ using namespace libMesh;
 using namespace EEBO;
 
 HeatTransfer::HeatTransfer(EquationSystems& eqs, const std::string& name, const unsigned int number) :
-    SystemBase(eqs, name, number)
-{
-  _temperature_varnum = add_variable("Temperature", SECOND, LAGRANGE);
+    SystemBase(eqs, name, number) {
 
-  _dim = 2;
+  temperature_varnum_ = add_variable("Temperature", SECOND, LAGRANGE);
+
+  dim_ = 2;
 
   const boundary_id_type all_ids[4] = {0, 1, 2, 3};
   std::set<boundary_id_type> all_bdys(all_ids, all_ids + (2 * 2));
-  std::vector<unsigned int> vars(1, _temperature_varnum);
+  std::vector<unsigned int> vars(1, temperature_varnum_);
   ZeroFunction<Number> zero;
   get_dof_map().add_dirichlet_boundary(DirichletBoundary(all_bdys, vars, &zero));
 
@@ -32,32 +32,31 @@ HeatTransfer::HeatTransfer(EquationSystems& eqs, const std::string& name, const 
   nonlinear_solver->residual_object = this;
 }
 
-HeatTransfer::~HeatTransfer()
-{
+HeatTransfer::~HeatTransfer() {
 
 }
 
-void HeatTransfer::initialize()
-{
+void HeatTransfer::initialize() {
   project_solution(HeatTransfer::initialSolution, nullptr, get_equation_systems().parameters);
 
   *old_local_solution = *current_local_solution;
 
-  if (_verbose)
+  if (verbose_)
     out << "<<< Initializing HeatTransfer" << std::endl;
 }
 
-void HeatTransfer::jacobian(const NumericVector<Number>& X, SparseMatrix<Number>& J, NonlinearImplicitSystem& /* S */)
-{
+void HeatTransfer::jacobian(const NumericVector<Number>& X,
+                            SparseMatrix<Number>& J,
+                            NonlinearImplicitSystem& /* S */) {
   const DofMap& dof_map = get_dof_map();
-  FEType fe_type = dof_map.variable_type(_temperature_varnum);
+  FEType fe_type = dof_map.variable_type(temperature_varnum_);
 
-  UniquePtr<FEBase> fe(FEBase::build(_dim, fe_type));
-  QGauss qrule(_dim, FIFTH);
+  UniquePtr<FEBase> fe(FEBase::build(dim_, fe_type));
+  QGauss qrule(dim_, FIFTH);
   fe->attach_quadrature_rule(&qrule);
 
-  UniquePtr<FEBase> fe_face(FEBase::build(_dim, fe_type));
-  QGauss qface(_dim - 1, FIFTH);
+  UniquePtr<FEBase> fe_face(FEBase::build(dim_, fe_type));
+  QGauss qface(dim_ - 1, FIFTH);
   fe_face->attach_quadrature_rule(&qface);
 
   const std::vector<Real>& JxW = fe->get_JxW();
@@ -99,17 +98,18 @@ void HeatTransfer::jacobian(const NumericVector<Number>& X, SparseMatrix<Number>
   }
 }
 
-void HeatTransfer::residual(const NumericVector<Number>& X, NumericVector<Number>& F, NonlinearImplicitSystem& /* S */)
-{
+void HeatTransfer::residual(const NumericVector<Number>& X,
+                            NumericVector<Number>& F,
+                            NonlinearImplicitSystem& /* S */) {
   const DofMap& dof_map = get_dof_map();
-  FEType fe_type = dof_map.variable_type(_temperature_varnum);
+  FEType fe_type = dof_map.variable_type(temperature_varnum_);
 
-  UniquePtr<FEBase> fe(FEBase::build(_dim, fe_type));
-  QGauss qrule(_dim, FIFTH);
+  UniquePtr<FEBase> fe(FEBase::build(dim_, fe_type));
+  QGauss qrule(dim_, FIFTH);
   fe->attach_quadrature_rule(&qrule);
 
-  UniquePtr<FEBase> fe_face(FEBase::build(_dim, fe_type));
-  QGauss qface(_dim - 1, FIFTH);
+  UniquePtr<FEBase> fe_face(FEBase::build(dim_, fe_type));
+  QGauss qface(dim_ - 1, FIFTH);
   fe_face->attach_quadrature_rule(&qface);
 
   const std::vector<Real>& JxW = fe->get_JxW();
@@ -153,7 +153,6 @@ void HeatTransfer::residual(const NumericVector<Number>& X, NumericVector<Number
 Number HeatTransfer::initialSolution(const Point& /* p */,
                                      const Parameters& /* parameters */,
                                      const std::string& /* sys_name */,
-                                     const std::string& /* unknown_name */)
-{
+                                     const std::string& /* unknown_name */) {
   return 0.0;
 }

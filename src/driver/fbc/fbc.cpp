@@ -12,24 +12,15 @@
 using namespace libMesh;
 using namespace EEBO;
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   auto init = std::make_unique<Init>(argc, argv);
   auto app = std::make_unique<App>(nullptr, init->comm());
 
-  Mesh mesh(init->comm());
-  MeshTools::Generation::build_square(mesh,
-                                      10, 10,
-                                      -1., 1.,
-                                      -1., 1.,
-                                      QUAD9);
-  mesh.print_info();
-  
-  FEProblem<HeatTransfer> model(mesh);
+  FEProblem<HeatTransfer> model(*app->mesh());
   model.init();
   model.solve();
 
-  auto exoio = std::make_unique<ExodusII_IO>(mesh);
+  auto exoio = std::make_unique<ExodusII_IO>(*app->mesh());
   exoio->write_equation_systems("test.e", model);
 
   return 0;

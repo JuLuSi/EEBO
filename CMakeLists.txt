@@ -26,8 +26,8 @@ endif ()
 
 include_directories(
         ${LIBMESH_INCLUDE_DIRS}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/util
         ${CMAKE_CURRENT_SOURCE_DIR}/src/base
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/kernels
         ${CMAKE_CURRENT_SOURCE_DIR}/src/model)
 
 set(LIBS ${LIBMESH_LIBRARIES} pthread)
@@ -57,6 +57,7 @@ if (ENABLE_TESTING)
 
     add_executable(test_main
             tests/test_main.cpp
+            tests/test_app.cpp
             tests/test_driver.cpp)
     target_link_libraries(test_main gtest eeboCommon ${LIBS})
     add_test(NAME all COMMAND test_main)

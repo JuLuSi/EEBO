@@ -8,9 +8,8 @@
 
 namespace EEBO {
 
-class HeatTransfer : public SystemBase
-{
-public:
+class HeatTransfer : public SystemBase {
+ public:
   HeatTransfer(libMesh::EquationSystems& eqs, const std::string& name, const unsigned int number);
 
   ~HeatTransfer() override;
@@ -26,14 +25,12 @@ public:
                 libMesh::NonlinearImplicitSystem& S) override;
 
   static libMesh::Number initialSolution(const libMesh::Point& p,
-                                const libMesh::Parameters& parameters,
-                                const std::string& sys_name,
-                                const std::string& unknown_name);
+                                         const libMesh::Parameters& parameters,
+                                         const std::string& sys_name,
+                                         const std::string& unknown_name);
 
-private:
-  bool _verbose = true;
-  unsigned int _dim;
-  unsigned int _temperature_varnum;
+ private:
+  unsigned int temperature_varnum_;
 };
 
 } // namespace EEBO

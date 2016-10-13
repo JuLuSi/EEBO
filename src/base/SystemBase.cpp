@@ -7,8 +7,7 @@ SystemBase::~SystemBase() {
 
 }
 
-SystemBase::SystemBase(libMesh::EquationSystems &eqs, const std::string &name, const unsigned int number) :
-    TransientNonlinearImplicitSystem(eqs, name, number)
-{
+SystemBase::SystemBase(libMesh::EquationSystems& eqs, const std::string& name, const unsigned int number) :
+    TransientNonlinearImplicitSystem(eqs, name, number) {
 
 }
