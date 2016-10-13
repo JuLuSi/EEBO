@@ -1,4 +1,4 @@
 [Mesh]
   type = file
-  filename = data/can.e
+  filename = ../tests/data/can.e
 []

@@ -8,7 +8,7 @@ using namespace libMesh;
 
 TEST(AppTest, CreateAppWithOptionfile)
 {
-  auto app = std::make_unique<App>("data/CreateAppWithOptionfile.in", init->comm());
+  auto app = std::make_unique<App>("../tests/data/CreateAppWithOptionfile.in", init->comm());
 }
 
 TEST(AppTest, CreateAppWithOutOptionfile)
