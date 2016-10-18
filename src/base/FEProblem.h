@@ -22,7 +22,7 @@ class FEProblem : public libMesh::EquationSystems {
   T& sys();
 
  protected:
-  T* _sys;
+  T* sys_;
 };
 
 template<typename T>
@@ -31,7 +31,7 @@ FEProblem<T>::FEProblem(libMesh::Mesh& mesh) :
   static_assert(std::is_base_of<libMesh::TransientNonlinearImplicitSystem, T>::value,
                 "FEProblem needs to be instantiated with a type which is inherited from SystemBase");
 
-  _sys = &(add_system<T>("sys0"));
+  sys_ = &(add_system<T>("sys0"));
 }
 
 template<typename T>
