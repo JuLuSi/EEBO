@@ -6,12 +6,10 @@
 using namespace EEBO;
 using namespace libMesh;
 
-TEST(AppTest, CreateAppWithOptionfile)
-{
+TEST(App, CreateAppWithOptionfile) {
   auto app = std::make_unique<App>("../tests/data/CreateAppWithOptionfile.in", init->comm());
 }
 
-TEST(AppTest, CreateAppWithOutOptionfile)
-{
+TEST(App, CreateAppWithOutOptionfile) {
   auto app = std::make_unique<App>(nullptr, init->comm());
 }

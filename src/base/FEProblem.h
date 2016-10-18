@@ -18,13 +18,11 @@ class FEProblem : public libMesh::EquationSystems {
   ~FEProblem() override = default;
 
   void init() override;
-  void step();
 
   T& sys();
 
  protected:
   T* _sys;
-  double _dt = 0;
 };
 
 template<typename T>
@@ -43,14 +41,8 @@ void FEProblem<T>::init() {
 }
 
 template<typename T>
-void FEProblem<T>::step() {
-  *(_sys->old_local_solution) = *(_sys->current_local_solution);
-  _sys->solve();
-}
-
-template<typename T>
 T& FEProblem<T>::sys() {
-  return *_sys;
+  return get_system<T>("sys0");
 }
 
 } // namespace EEBO

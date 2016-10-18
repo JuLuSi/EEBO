@@ -5,11 +5,11 @@
 #include "libmesh/quadrature_gauss.h"
 #include "libmesh/numeric_vector.h"
 #include "libmesh/sparse_matrix.h"
-#include "libmesh/nonlinear_solver.h"
 #include "libmesh/parameters.h"
 #include "libmesh/dirichlet_boundaries.h"
 #include "libmesh/zero_function.h"
 #include "libmesh/equation_systems.h"
+#include "libmesh/analytic_function.h"
 
 using namespace libMesh;
 using namespace EEBO;
@@ -21,12 +21,6 @@ HeatTransfer::HeatTransfer(EquationSystems& eqs, const std::string& name, const 
 
   dim_ = 2;
 
-  const boundary_id_type all_ids[4] = {0, 1, 2, 3};
-  std::set<boundary_id_type> all_bdys(all_ids, all_ids + (2 * 2));
-  std::vector<unsigned int> vars(1, temperature_varnum_);
-  ZeroFunction<Number> zero;
-  get_dof_map().add_dirichlet_boundary(DirichletBoundary(all_bdys, vars, &zero));
-
   attach_init_object(*this);
   nonlinear_solver->jacobian_object = this;
   nonlinear_solver->residual_object = this;
@@ -37,7 +31,7 @@ HeatTransfer::~HeatTransfer() {
 }
 
 void HeatTransfer::initialize() {
-  project_solution(HeatTransfer::initialSolution, nullptr, get_equation_systems().parameters);
+  project_solution(HeatTransfer::initialState, nullptr, get_equation_systems().parameters);
 
   *old_local_solution = *current_local_solution;
 
@@ -142,7 +136,7 @@ void HeatTransfer::residual(const NumericVector<Number>& X,
       }
 
       for (unsigned int i = 0; i < phi.size(); i++) {
-        Fe(i) += JxW[qp] * (grad_u * dphi[i][qp] - (1.0 * phi[i][qp]));
+        Fe(i) += JxW[qp] * (grad_u * dphi[i][qp] - (forcing_term_ * phi[i][qp]));
       }
     }
     dof_map.constrain_element_vector(Fe, dof_indices);
@@ -150,9 +144,13 @@ void HeatTransfer::residual(const NumericVector<Number>& X,
   }
 }
 
-Number HeatTransfer::initialSolution(const Point& /* p */,
-                                     const Parameters& /* parameters */,
-                                     const std::string& /* sys_name */,
-                                     const std::string& /* unknown_name */) {
+Number HeatTransfer::initialState(const Point& /* p */,
+                                  const Parameters& /* parameters */,
+                                  const std::string& /* sys_name */,
+                                  const std::string& /* unknown_name */) {
   return 0.0;
+}
+
+void HeatTransfer::timeDerivative() {
+
 }
