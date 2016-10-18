@@ -10,45 +10,43 @@ env:
   global:
     - MAKE_THREADS=2
     - PYTHON_VERSION="2.7"
-    - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
-    - REPOS_DIR="${TRAVIS_BUILD_DIR}/repos"
-    - PETSC_DIR="${DEPS_DIR}/petsc"
-    - PETSC_ARCH="arch-eebo"
+    - STACK_SRC="${TRAVIS_BUILD_DIR}/tmp"
+    - PACKAGES_DIR="${TRAVIS_BUILD_DIR}/opt"
+    - PETSC_DIR="${PACKAGES_DIR}/petsc-3.7.4"
+
+addons:
+  apt:
+    packages:
+    - cmake
+    - automake
+    - gfortran
+    - curl
+    - valgrind
 
 # Limit number of commits in cloning
 git:
   depth: 200
-
-# Dependencies installed as packages
-addons:
-  apt:
-    packages:
-      - cmake
-      - libopenmpi-dev
-      - openmpi-common
-      - openmpi-bin
-      - gfortran
 
 before_install:
   - echo $LANG
   - echo $LC_ALL
 
 install:
-  - chmod a+x scripts/travis-install-deps.sh
-  - if [ ! -d ${DEPS_DIR}/libmesh ]; then scripts/travis-install-deps.sh; else echo "Using cached dependencies."; fi
-  - scripts/travis-install-deps.sh
-  - ls -R ${DEPS_DIR}
+  - if [ ! -d ${PACKAGES_DIR}/libmesh ]; then chmod a+x scripts/travis-install-deps.sh; scripts/travis-install-deps.sh; else echo "Using cached dependencies."; fi
+  - ls -R ${PACKAGES_DIR}
 
 script:
+  - source scripts/set-env-mpich.sh
   - mkdir build
   - pushd build
-  - cmake -DLIBMESH_DIR:PATH=${DEPS_DIR}/libmesh -DBUILD_SHARED_LIBS:BOOL=ON ../
-  - make
+  - cmake -DLIBMESH_DIR:PATH=${PACKAGES_DIR}/libmesh -DBUILD_SHARED_LIBS:BOOL=ON -DENABLE_TESTING:BOOL=ON ../
+  - make -j $MAKE_THREADS
+  - ./test_main
 
 cache:
   timeout: 300
   directories:
-    - ${DEPS_DIR}
+    - ${PACKAGES_DIR}
 
 notifications:
   email: false

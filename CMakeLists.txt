@@ -1,42 +1,74 @@
 cmake_minimum_required(VERSION 3.2)
 project(EEBO)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-unknown-pragmas -Wpedantic -Wdisabled-optimization")
+find_program(CCACHE_FOUND ccache)
+if (CCACHE_FOUND)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+endif (CCACHE_FOUND)
 
 find_package(MPI REQUIRED)
-set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
+set(${CMAKE_CXX_COMPILER} ${MPI_CXX_COMPILER})
 
 # Only debug version for now
 set(METHOD dbg)
 
-if (METHOD STREQUAL "dbg")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC")
-endif ()
-
 # libMesh
 if (LIBMESH_DIR)
     set(ENV{PKG_CONFIG_PATH} ${LIBMESH_DIR}/lib/pkgconfig)
-endif ()
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBMESH REQUIRED libmesh-${METHOD})
 
-link_directories(${LIBMESH_LIBRARY_DIRS})
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBMESH REQUIRED libmesh-${METHOD})
+
+    add_definitions(${LIBMESH_CFLAGS_OTHER})
+    link_directories(${LIBMESH_LIBRARY_DIRS})
+endif ()
 
 include_directories(
         ${LIBMESH_INCLUDE_DIRS}
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/common)
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/util
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/base
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/model)
 
-set(LIBS ${LIBMESH_LIBRARIES})
+set(LIBS ${LIBMESH_LIBRARIES} pthread)
 
 set(SOURCE_FILES
-        src/common/EEBOApp.cc)
+        src/base/Init.cpp
+        src/base/App.cpp
+        src/base/FEProblem.h
+        src/base/SystemBase.cpp
+        src/model/HeatTransfer.cpp)
+
 add_library(eeboCommon ${SOURCE_FILES})
 
 add_executable(fbc_driver
-        src/driver/fbc/fbc.cc)
+        src/driver/fbc/fbc.cpp)
 target_link_libraries(fbc_driver eeboCommon ${LIBS})
 
 message(STATUS "")
 message(STATUS "CXXFLAGS:  ${CMAKE_CXX_FLAGS}")
 message(STATUS "LIBRARIES: ${LIBS}")
 message(STATUS "")
+
+if (ENABLE_TESTING)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests/gtest)
+    enable_testing()
+    include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+
+    add_executable(test_main
+            tests/test_main.cpp
+            tests/test_app.cpp
+            tests/test_driver.cpp)
+    target_link_libraries(test_main gtest eeboCommon ${LIBS})
+    add_test(NAME all COMMAND test_main)
+endif ()
+
+find_package(Doxygen)
+if (DOXYGEN_FOUND)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile @ONLY)
+    add_custom_target(doc
+            ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation with Doxygen" VERBATIM
+            )
+endif ()
