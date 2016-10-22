@@ -2,6 +2,7 @@
 #define FEPROBLEM_HH
 
 #include "EEBO.h"
+#include "SystemBase.h"
 #include "libmesh/mesh.h"
 #include "libmesh/numeric_vector.h"
 #include "libmesh/equation_systems.h"
@@ -28,7 +29,7 @@ class FEProblem : public libMesh::EquationSystems {
 template<typename T>
 FEProblem<T>::FEProblem(libMesh::Mesh& mesh) :
     EquationSystems(mesh) {
-  static_assert(std::is_base_of<libMesh::TransientNonlinearImplicitSystem, T>::value,
+  static_assert(std::is_base_of<SystemBase, T>::value,
                 "FEProblem needs to be instantiated with a type which is inherited from SystemBase");
 
   sys_ = &(add_system<T>("sys0"));
