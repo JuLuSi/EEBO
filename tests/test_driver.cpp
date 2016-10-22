@@ -70,3 +70,14 @@ TEST(Driver, RunHeatTransferModelWithExactDirichlet) {
   out << "L2 error: " << l2err << std::endl;
   EXPECT_LE(l2err, 1E-10);
 }
+
+TEST(Driver, RetrieveMassAndJacobianMatrixFromHeatTransferModel) {
+  auto app = std::make_unique<App>(nullptr, init->comm());
+  auto model = std::make_unique<FEProblem<HeatTransfer> >(*app->mesh());
+
+  HeatTransfer& sys = model->sys();
+  model->init();
+
+  EXPECT_TRUE(sys.massMatrix() != nullptr);
+  EXPECT_TRUE(sys.jacobianMatrix() != nullptr);
+}
