@@ -46,7 +46,7 @@ void App::generateMesh() {
   mesh_ = std::make_shared<Mesh>(this->comm());
   MeshTools::Generation::build_square(*mesh_,
                                       10, 10,
-                                      -1., 1.,
-                                      -1., 1.,
+                                      0., 1.,
+                                      0., 1.,
                                       QUAD9);
 }
