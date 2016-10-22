@@ -16,7 +16,7 @@ namespace EEBO {
 ///
 /// Default forcing term f is 0.0
 ///
-class HeatTransfer : public SystemBase {
+class HeatTransfer final : public SystemBase {
  public:
   HeatTransfer(libMesh::EquationSystems& eqs, const std::string& name, const unsigned int number);
 
@@ -37,10 +37,12 @@ class HeatTransfer : public SystemBase {
                                       const std::string& sys_name,
                                       const std::string& unknown_name);
 
-  void setForcing(const double forcing_term) { forcing_term_ = forcing_term; }
+  void setForcing(const double forcing_term) { forcing_term_ = forcing_term; };
 
  private:
   void timeDerivative() override;
+
+  void assembleMass() override;
 
   unsigned int temperature_varnum_; ///< Variable number of the temperature.
 

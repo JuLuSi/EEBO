@@ -34,6 +34,8 @@ class SystemBase : public libMesh::TransientNonlinearImplicitSystem,
 
   virtual void timeDerivative() = 0;
 
+  virtual void assembleMass() = 0;
+
   /// Verbose output of member functions.
   bool verbose_ = true;
 

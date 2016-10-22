@@ -21,6 +21,8 @@ HeatTransfer::HeatTransfer(EquationSystems& eqs, const std::string& name, const 
 
   dim_ = 2;
 
+  HeatTransfer::add_matrix("mass");
+
   attach_init_object(*this);
   nonlinear_solver->jacobian_object = this;
   nonlinear_solver->residual_object = this;
@@ -35,6 +37,14 @@ void HeatTransfer::initialize() {
 
   *old_local_solution = *current_local_solution;
 
+  // Assemble the Jacobian
+  HeatTransfer::jacobian(*current_local_solution, *this->matrix, *this);
+  this->matrix->close();
+
+  // Assemble the mass operator
+  HeatTransfer::assembleMass();
+  this->massMatrix()->close();
+
   if (verbose_)
     out << "<<< Initializing HeatTransfer" << std::endl;
 }
@@ -48,10 +58,6 @@ void HeatTransfer::jacobian(const NumericVector<Number>& X,
   UniquePtr<FEBase> fe(FEBase::build(dim_, fe_type));
   QGauss qrule(dim_, FIFTH);
   fe->attach_quadrature_rule(&qrule);
-
-  UniquePtr<FEBase> fe_face(FEBase::build(dim_, fe_type));
-  QGauss qface(dim_ - 1, FIFTH);
-  fe_face->attach_quadrature_rule(&qface);
 
   const std::vector<Real>& JxW = fe->get_JxW();
   const std::vector<std::vector<Real>>& phi = fe->get_phi();
@@ -102,10 +108,6 @@ void HeatTransfer::residual(const NumericVector<Number>& X,
   QGauss qrule(dim_, FIFTH);
   fe->attach_quadrature_rule(&qrule);
 
-  UniquePtr<FEBase> fe_face(FEBase::build(dim_, fe_type));
-  QGauss qface(dim_ - 1, FIFTH);
-  fe_face->attach_quadrature_rule(&qface);
-
   const std::vector<Real>& JxW = fe->get_JxW();
   const std::vector<std::vector<Real>>& phi = fe->get_phi();
   const std::vector<std::vector<RealGradient>>& dphi = fe->get_dphi();
@@ -144,6 +146,8 @@ void HeatTransfer::residual(const NumericVector<Number>& X,
   }
 }
 
+
+
 Number HeatTransfer::initialState(const Point& /* p */,
                                   const Parameters& /* parameters */,
                                   const std::string& /* sys_name */,
@@ -153,4 +157,42 @@ Number HeatTransfer::initialState(const Point& /* p */,
 
 void HeatTransfer::timeDerivative() {
 
+}
+
+void HeatTransfer::assembleMass() {
+  const DofMap& dof_map = get_dof_map();
+  FEType fe_type = dof_map.variable_type(temperature_varnum_);
+
+  UniquePtr<FEBase> fe(FEBase::build(dim_, fe_type));
+  QGauss qrule(dim_, FIFTH);
+  fe->attach_quadrature_rule(&qrule);
+
+  const std::vector<Real>& JxW = fe->get_JxW();
+  const std::vector<std::vector<Real>>& phi = fe->get_phi();
+
+  DenseMatrix<Number> Me;
+
+  std::vector<dof_id_type> dof_indices;
+
+  MeshBase::const_element_iterator el = get_mesh().active_local_elements_begin();
+  const MeshBase::const_element_iterator end_el = get_mesh().active_local_elements_end();
+
+  for (; el != end_el; ++el) {
+    const Elem* elem = *el;
+
+    dof_map.dof_indices(elem, dof_indices);
+    fe->reinit(elem);
+
+    Me.resize(dof_indices.size(), dof_indices.size());
+
+    for (unsigned int qp = 0; qp < qrule.n_points(); qp++) {
+      for (unsigned int i = 0; i < phi.size(); i++) {
+        for (unsigned int j = 0; j < phi.size(); j++) {
+          Me(i, j) += JxW[qp] * (phi[i][qp] * phi[j][qp]);
+        }
+      }
+    }
+    dof_map.constrain_element_matrix(Me, dof_indices);
+    HeatTransfer::get_matrix("mass").add_matrix(Me, dof_indices);
+  }
 }
