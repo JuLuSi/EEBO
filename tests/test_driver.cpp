@@ -9,7 +9,6 @@
 #include "libmesh/dirichlet_boundaries.h"
 #include "libmesh/exact_solution.h"
 #include "libmesh/exodusII_io.h"
-#include "libmesh/petsc_matrix.h"
 #include "petsc.h"
 
 using namespace EEBO;
@@ -70,47 +69,4 @@ TEST(Driver, RunHeatTransferModelWithExactDirichlet) {
 
   out << "L2 error: " << l2err << std::endl;
   EXPECT_LE(l2err, 1E-10);
-}
-
-TEST(Driver, RetrieveMassAndJacobianMatrixFromHeatTransferModel) {
-  auto app = std::make_unique<App>(nullptr, init->comm());
-  auto model = std::make_unique<FEProblem<HeatTransfer> >(*app->mesh());
-
-  HeatTransfer& sys = model->sys();
-  model->init();
-
-  EXPECT_TRUE(sys.massMatrix() != nullptr);
-  EXPECT_TRUE(sys.jacobianMatrix() != nullptr);
-}
-
-TEST(Driver, SaveMassAndJacobianMatrixToMatlabFromHeatTransferModel) {
-  auto app = std::make_unique<App>(nullptr, init->comm());
-  auto model = std::make_unique<FEProblem<HeatTransfer> >(*app->mesh());
-  HeatTransfer& sys = model->sys();
-
-  const boundary_id_type all_ids[4] = {0, 1, 2, 3};
-  std::set<boundary_id_type> all_bdys(all_ids, all_ids + (2 * 2));
-  std::vector<unsigned int> vars(1, 0);
-  AnalyticFunction<> exact_solution_object(exactDirichletAnalyticWrapper);
-  sys.get_dof_map().add_dirichlet_boundary(DirichletBoundary(all_bdys, vars, exact_solution_object));
-
-  model->init();
-  const DofMap& dof_map = sys.get_dof_map();
-  std::vector<dof_id_type> local_non_condensed_dofs_set;
-  for (dof_id_type i = dof_map.first_dof(); i < dof_map.end_dof(); i++) {
-    if (!dof_map.is_constrained_dof(i)) {
-      local_non_condensed_dofs_set.push_back(i);
-    }
-  }
-
-  SparseMatrix<Number>* J = sys.jacobianMatrix();
-  SparseMatrix<Number>* M = sys.massMatrix();
-
-  auto Jc = std::make_unique<PetscMatrix<Number> >(init->comm());
-  J->create_submatrix(*Jc.get(), local_non_condensed_dofs_set, local_non_condensed_dofs_set);
-  auto Mc = std::make_unique<PetscMatrix<Number> >(init->comm());
-  M->create_submatrix(*Mc.get(), local_non_condensed_dofs_set, local_non_condensed_dofs_set);
-
-  Jc->print_matlab("jacobian.m");
-  Mc->print_matlab("mass.m");
 }
