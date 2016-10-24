@@ -96,6 +96,16 @@ make PETSC_DIR=$PACKAGES_DIR/petsc-3.7.4 PETSC_ARCH="" test 1>>build.log
 
 export PETSC_DIR=$PACKAGES_DIR/petsc-3.7.4
 
+echo "Building SLEPc"
+git clone --depth 100 -b v3.7.3 https://bitbucket.org/slepc/slepc.git $STACK_SRC/slepc
+cd $STACK_SRC/slepc
+./configure --prefix=$PACKAGES_DIR/slepc-3.7.3
+make SLEPC_DIR=$STACK_SRC/slepc PETSC_DIR=$PACKAGES_DIR/petsc-3.7.4
+make SLEPC_DIR=$STACK_SRC/slepc PETSC_DIR=$PACKAGES_DIR/petsc-3.7.4 install 1>>build.log
+make SLEPC_DIR=$PACKAGES_DIR/slepc-3.7.3 PETSC_DIR=$PACKAGES_DIR/petsc-3.7.4 PETSC_ARCH="" test 1>>build.log
+
+export SLEPC_DIR=$PACKAGES_DIR/slepc-3.7.3
+
 echo "Building libMesh"
 git clone --depth 100 -b v1.0.0 https://github.com/libMesh/libmesh.git $STACK_SRC/libmesh
 cd $STACK_SRC/libmesh
