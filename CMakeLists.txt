@@ -58,7 +58,8 @@ if (ENABLE_TESTING)
     add_executable(test_main
             tests/test_main.cpp
             tests/test_app.cpp
-            tests/test_driver.cpp)
+            tests/test_driver.cpp
+            tests/test_eigenproblem.cpp)
     target_link_libraries(test_main gtest eeboCommon ${LIBS})
     add_test(NAME all COMMAND test_main)
 endif ()
