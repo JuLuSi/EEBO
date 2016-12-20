@@ -103,7 +103,7 @@ int main (int argc, char** argv)
   // higher-order elements allows us to use higher-order
   // approximation, as in example 3.
   MeshTools::Generation::build_square (mesh,
-                                       10, 10,
+                                       50, 50,
                                        0., 1.,
                                        0., 1.,
                                        TRI3);
@@ -164,7 +164,7 @@ int main (int argc, char** argv)
 
   // We also set a standard linear solver flag in the EquationSystems object
   // which controls the maxiumum number of linear solver iterations allowed.
-  equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 250;
+  equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1000;
 
   // problem specifix parameters
   equation_systems.parameters.set<double>("alpha") = 1;					// first line, coefficient of expansion
@@ -172,7 +172,7 @@ int main (int argc, char** argv)
   equation_systems.parameters.set<double>("g_1") = 0;					// gravitational acceleration in x direction
   equation_systems.parameters.set<double>("g_2") = -9.81;				// gravitational acceleration in y direction
   equation_systems.parameters.set<double>("nu") = 1;					// first line, kinematic viscosity
-  equation_systems.parameters.set<double>("eps") = 1e-7; 					// for second line, pressure-velocity coupling
+  equation_systems.parameters.set<double>("eps") = 0; 					// for second line, pressure-velocity coupling
   equation_systems.parameters.set<double>("kappa") = 1;					// third line, thermal diffusivity
   equation_systems.parameters.set<double>("gamma") = 1;					// boundary conditions, heat conductivity of boundary
   equation_systems.parameters.set<double>("T_0") = 0;
@@ -455,17 +455,17 @@ void assemble_stokes (EquationSystems & es,
   // const Real theta = 1.;
   
   // get the parameters of the system
-  auto alpha = es.parameters.get<double>("alpha");
-  auto rho = es.parameters.get<double>("rho");
-  auto g_1 = es.parameters.get<double>("g_1");
-  auto g_2 = es.parameters.get<double>("g_2");
-  auto nu = es.parameters.get<double>("nu");
-  auto eps = es.parameters.get<double>("eps");
-  auto kappa = es.parameters.get<double>("kappa");
-  auto gamma = es.parameters.get<double>("gamma");
-  auto T_0 = es.parameters.get<double>("T_0");
-  auto T_Dir = es.parameters.get<double>("T_Dir");
-  auto T_out = es.parameters.get<double>("T_out");
+  const auto alpha = es.parameters.get<double>("alpha");
+  const auto rho = es.parameters.get<double>("rho");
+  const auto g_1 = es.parameters.get<double>("g_1");
+  const auto g_2 = es.parameters.get<double>("g_2");
+  const auto nu = es.parameters.get<double>("nu");
+  const auto eps = es.parameters.get<double>("eps");
+  const auto kappa = es.parameters.get<double>("kappa");
+  const auto gamma = es.parameters.get<double>("gamma");
+  const auto T_0 = es.parameters.get<double>("T_0");
+  const auto T_Dir = es.parameters.get<double>("T_Dir");
+  const auto T_out = es.parameters.get<double>("T_out");
 
 
   // Now we will loop over all the elements in the mesh that
@@ -505,6 +505,7 @@ void assemble_stokes (EquationSystems & es,
       fe_vel->reinit  (elem);
       fe_pres->reinit (elem);
 	  fe_temp->reinit (elem);
+	  fe_face->reinit (elem);
 	  
       // Zero the element matrix and right-hand side before
       // summing them.  We use the resize member here because

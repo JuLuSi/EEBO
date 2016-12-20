@@ -1,0 +1,190 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\begin{document}
+\section{Simulation of the PDEs}
+\subsection{Model Equations}
+Let $u= (u_1,u_2)$ be the velocity, where $u_1,u_2: \Omega \times [0,\infty) \to \mathbb{R}$ and $p: \Omega \times [0,\infty) \to \mathbb{R}$ the pressure and $T : \Omega \times [0,\infty) \to \mathbb{R}$ the temperature variable. We then get the scalar equations:
+\begin{align}
+\frac{\partial u_1}{\partial t} + \langle u,\nabla u_1\rangle  &= -\frac{1}{\rho}\nabla p + \nu \nabla^2 u_1 - g_1\alpha (T-T_0) \label{modeleq:1}\\
+\frac{\partial u_2}{\partial t} + \langle u,\nabla u_2\rangle  &= -\frac{1}{\rho}\nabla p + \nu \nabla^2 u_2 - g_2\alpha (T-T_0) \label{modeleq:2}\\
+\frac{\partial u_1}{\partial x_1} + \frac{\partial u_2}{\partial x_2} &= \varepsilon p \label{modeleq:3}\\
+\frac{\partial T}{\partial t} + \langle u,\nabla T\rangle &= \kappa \nabla^2 T \label{modeleq:4}
+\end{align}
+where 
+\begin{align*}
+	g = \left(g_1,g_2\right)^T &: \text{gravitational acceleration}\\
+	\rho &: \text{density of the fluid} \\
+	\nu &: \text{kinematic viscosity} \\
+	\alpha &: \text{coefficient of expansion} \\
+	\kappa &: \text{thermal diffusivity} \\
+	\varepsilon &: \text{regularisation parameter} \\
+	T_0 &: \text{a reference temperature}
+\end{align*}
+with boundary conditions
+\begin{align}
+u_1 = u_2 &= 0 \quad &\text{ on } \Gamma\\
+T &= T_\text{dir}\quad &\text{ on } \Gamma_1\\
+\partial_\eta T = \langle \nabla T, \eta \rangle &= \gamma (T-T_\text{out}) \quad &\text{ on } \Gamma \setminus\Gamma_1
+\end{align}
+where
+\begin{align*}
+ \eta &: \text{outer normal of the boundary} \\
+T_\text{dir} &: \text{heating} \\
+T_\text{out} &: \text{outside temperature} \\
+\gamma &: \text{thermal conductivity of the boundary}
+ \end{align*}
+ \subsection{Implicit Euler discretisation in time}
+If we have a differential equation, e.g for $u_1$
+\begin{align*}
+	\frac{\partial u_1}{\partial t} = F(u_1,u_2,p,T)
+\end{align*}
+we can apply implicit Euler with a timestep $\delta t$ to get
+\begin{align}
+\label{Eulerscheme}
+	\frac{u_1^\text{new}-u_1^\text{old}}{\delta t} = F(u_1^\text{new},u_2^\text{new},p^\text{new},T^\text{new})
+\end{align}
+where we now have find the root $u_1$ of the Function
+\begin{align*}
+u_1-u_1^\text{old} - \delta tF(u_1,u_2,p,T)
+\end{align*}
+ \subsection{Weak formulation}
+Testing each line  $(\ref{modeleq:1})-(\ref{modeleq:4})$ with a test function $v_i,i\in \{1,\dots,4\}$ and integrating over the domain $\Omega$ we can now define 
+ \begin{align}
+F_1(u_1,u_2,p,T)v_1 &:= \int\limits_\Omega \left(-\langle u,\nabla u_1\rangle -\frac{1}{\rho}\nabla p + \nu \nabla^2 u_1 - g_1\alpha (T-T_0)\right)v_1\text{d}\omega \label{F:1}\\
+F_2(u_1,u_2,p,T)v_2 &:=\int\limits_\Omega \left(-\langle u,\nabla u_2\rangle  -\frac{1}{\rho}\nabla p + \nu \nabla^2 u_2 - g_2\alpha (T-T_0)\right)v_2\text{d}\omega \label{F:2}\\
+F_3(u_1,u_2,p,T)v_3 &:= \int\limits_\Omega\left(\varepsilon p -  \frac{\partial u_1}{\partial x_1} - \frac{\partial u_2}{\partial x_2}\right)v_3\text{d}\omega\label{F:3}\\
+F_4(u_1,u_2,p,T)v_4 &:=\int\limits_\Omega \left(-\langle u,\nabla T\rangle+ \kappa \nabla^2 T\right)v_4 \text{d}\omega\label{F:4}
+ \end{align}
+ partial integration and using the boundary conditions yields: \\(remember, $\nabla^2 u_1 = \Delta u_1 = \sum\limits_i \frac{\partial^2 u_1}{\partial^2 x_i}$)
+ \begin{align*}
+ F_1(u_1,u_2,p,T)v_1 &= \int\limits_\Omega \left(-\langle u,\nabla u_1\rangle -\frac{1}{\rho}\nabla p - g_1\alpha (T-T_0)\right)v_1 + \nu \nabla^2 u_1 v_1 \text{d}\omega \\
+ &= \int\limits_\Omega \left(-\langle u,\nabla u_1\rangle -\frac{1}{\rho}\nabla p - g_1\alpha (T-T_0)\right)v_1 - \nu \langle \nabla u_1,\nabla v_1 \rangle \text{d}\omega + \int\limits_\Gamma \nu \langle \nabla u_1,\eta\rangle v_1 \text{d}s \\
+ &= \int\limits_\Omega \left(-\langle u,\nabla u_1\rangle -\frac{1}{\rho}\nabla p - g_1\alpha (T-T_0)\right)v_1 - \nu \langle \nabla u_1,\nabla v_1 \rangle \text{d}\omega,  \quad \text{as }v_1 = 0 \text{ on } \Gamma \\
+ F_2(u_1,u_2,p,T)v_2 &= \int\limits_\Omega \left(-\langle u,\nabla u_2\rangle -\frac{1}{\rho}\nabla p - g_2\alpha (T-T_0)\right)v_2 - \nu \langle \nabla u_2,\nabla v_2 \rangle \text{d}\omega + \int\limits_\Gamma \nu \langle \nabla u_2,\eta\rangle v_2 \text{d}s\\
+ &= \int\limits_\Omega \left(-\langle u,\nabla u_2\rangle -\frac{1}{\rho}\nabla p - g_2\alpha (T-T_0)\right)v_2 - \nu \langle \nabla u_2,\nabla v_2 \rangle \text{d}\omega \quad \text{as }v_2 = 0 \text{ on } \Gamma \\\\
+ F_4(u_1,u_2,p,T)v_4 &=\int\limits_\Omega \left(-\langle u,\nabla T\rangle+ \kappa \nabla^2 T\right)v_4 \text{d}\omega\\
+ &=\int\limits_\Omega -\langle u,\nabla T\rangle v_4 - \kappa \langle\nabla T,\nabla v_4\rangle \text{d}\omega + \int\limits_\Gamma \kappa \langle \nabla T,\eta \rangle v_4\text{d}s\\
+ &=\int\limits_\Omega -\langle u,\nabla T\rangle v_4 - \kappa \langle\nabla T,\nabla v_4\rangle \text{d}\omega + \int\limits_{\Gamma_1} \kappa \langle \nabla T,\eta \rangle v_4\text{d}s + \int\limits_{\Gamma \setminus \Gamma_1} \kappa \langle \nabla T,\eta \rangle v_4\text{d}s\\
+ &=\int\limits_\Omega -\langle u,\nabla T\rangle v_4 - \kappa \langle\nabla T,\nabla v_4\rangle \text{d}\omega + \int\limits_{\Gamma_1} \kappa \langle \nabla T,\eta \rangle v_4\text{d}s + \int\limits_{\Gamma \setminus \Gamma_1} \kappa \gamma(T-T_\text{out}) v_4\text{d}s\\
+ \end{align*}
+ \subsection{Newton's method on the implicit Euler equation}
+ Using the considerations of the last two subsections, we define
+ \begin{align*}
+ G(u_1,u_2,p,T) = 
+ \begin{pmatrix}
+\int\limits_\Omega (u_1- u_1^\text{old})v_1 \text{d}\omega -\delta t F_1(u_1,u_2,p,T)v_1\\
+\int\limits_\Omega (u_2- u_2^\text{old})v_2 \text{d}\omega -\delta t F_2(u_1,u_2,p,T)v_2\\
+F_3(u_1,u_2,p,T)v_3\\
+\int\limits_\Omega (T- T^\text{old})v_4 \text{d}\omega -\delta t F_4(u_1,u_2,p,T)v_4\\
+ \end{pmatrix}
+ \end{align*}
+ We now want to find $(u_1,u_2,p,T)^T$ such that $G(u_1,u_2,p,T) = 0$. Applying Newton's method on the function $G$, we get the iteration
+ \begin{align*}
+\begin{pmatrix}
+u_1^{i+1}\\
+u_2^{i+1}\\
+p^{i+1}\\
+T^{i+1}\\
+\end{pmatrix}
+=\begin{pmatrix}
+u_1^{i}\\
+u_2^{i}\\
+p^{i}\\
+T^{i}\\
+\end{pmatrix}
++
+\begin{pmatrix}
+\delta u_1^{i}\\
+\delta u_2^{i}\\
+\delta p^{i}\\
+\delta T^{i}\\
+\end{pmatrix}
+ \end{align*}
+ where 
+ \begin{align*}
+G'(u_1^i,u_2^i,p^i,T^i)\begin{pmatrix}
+\delta u_1^{i}\\
+\delta u_2^{i}\\
+\delta p^{i}\\
+\delta T^{i}\\
+\end{pmatrix} = -G(u_1^i,u_2^i,p^i,T^i)
+ \end{align*}
+and 
+ \begin{align*}
+G'(u_1^i,u_2^i,p^i,T^i) = \begin{pmatrix}
+\frac{\partial G_1}{\partial u_1}&\frac{\partial G_1}{\partial u_2}&\frac{\partial G_1}{p}&\frac{\partial G_1}{\partial T}\\
+\frac{\partial G_2}{\partial u_1}&\frac{\partial G_2}{\partial u_2}&\frac{\partial G_2}{p}&\frac{\partial G_2}{\partial T}\\
+\frac{\partial G_3}{\partial u_1}&\frac{\partial G_3}{\partial u_2}&\frac{\partial G_3}{p}&\frac{\partial G_3}{\partial T}\\
+\frac{\partial G_4}{\partial u_1}&\frac{\partial G_4}{\partial u_2}&\frac{\partial G_4}{p}&\frac{\partial G_4}{\partial T}\\
+\end{pmatrix}
+ \end{align*}
+\subsection{Simplifications of the system}
+Consider a Function $G(z) = C + Az + N(z)$, where $C$ is a constant, $Az$ is the linear and $N(z)$ is the nonlinear part of the function. If we apply Newton's method to find a root of $G(z)$, using $\delta z^i = z^{i+1}-z^{i}$, we have to solve
+\begin{align*}
+G'(z^i)\delta z &= -G(z^i) \\
+\Leftrightarrow  \qquad (A+N'(z^i))(z^{i+1}-z^i) &= -\left(C + Az^i + N(z^i)\right)
+\end{align*}
+and solve this for $z^{i+1}$ we obtain
+\begin{align*}
+(A+N'(z^i))(z^{i+1}) = -C - Az^i - N(z^i) +(A+N'(z^i))z_i = -C-N(z^i) + N'(z^i)z^i
+\end{align*}
+In our context, we split up $G_i(u_1,u_2,p,T),i\in \{1,\dots,4\}$ and get
+\begin{align*}
+C_{G_1} &= -\int\limits_{\Omega}u_1^\text{old}v_1\text{d}\omega-\delta tC_{F_1} =-\int\limits_{\Omega}u_1^\text{old}v_1\text{d}\omega -\delta t\int\limits_\Omega g_1\alpha T_0 v_1 \text{d}\omega \\
+C_{G_2} &= -\int\limits_{\Omega}u_2^\text{old}v_2\text{d}\omega-\delta tC_{F_2} =-\int\limits_{\Omega}u_2^\text{old}v_2\text{d}\omega -\delta t\int\limits_\Omega g_2\alpha T_0 v_2 \text{d}\omega \\
+C_{G_3} &= C_{F_3} = 0 \\
+C_{G_4} &= -\int\limits_{\Omega}T^\text{old}v_4\text{d}\omega-\delta tC_{F_4} =-\int\limits_{\Omega}T^\text{old}v_4\text{d}\omega + \delta t\int\limits_{\Gamma\setminus\Gamma_1} \kappa\gamma T_\text{out} v_3\text{d}\omega
+\end{align*}
+for the constant part and for the left hand side linear part
+\begin{align*}
+A_{G_1}z^{i+1} &= \int\limits_\Omega u_1^{i+1} v_1 \text{d}\omega - \delta tA_{F_1}z^{i+1} \\
+&= \int\limits_\Omega u_1^{i+1} v_1 \text{d}\omega - \delta t\int\limits_\Omega \left(-\frac{1}{\rho}\nabla p^{i+1}-g_1\alpha T^{i+1}\right)v_1 - \nu\langle \nabla u_1^{i+1},\nabla v_1\rangle \text{d}\omega\\
+&= \int\limits_\Omega u_1^{i+1} v_1 \text{d}\omega + \delta t\int\limits_\Omega \left(\frac{1}{\rho}\nabla p^{i+1}+g_1\alpha T^{i+1}\right)v_1 + \nu\langle \nabla u_1^{i+1},\nabla v_1\rangle \text{d}\omega\\
+A_{G_2}z^{i+1} &= \int\limits_\Omega u_2^{i+1} v_2 \text{d}\omega - \delta tA_{F_2}z^{i+1} \\
+&= \int\limits_\Omega u_2^{i+1} v_2 \text{d}\omega - \delta t\int\limits_\Omega \left(-\frac{1}{\rho}\nabla p^{i+1}-g_2\alpha T^{i+1}\right)v_2 - \nu\langle \nabla u_2^{i+1},\nabla v_2\rangle \text{d}\omega\\
+&= \int\limits_\Omega u_2^{i+1} v_2 \text{d}\omega + \delta t\int\limits_\Omega \left(\frac{1}{\rho}\nabla p^{i+1}+g_2\alpha T^{i+1}\right)v_2 + \nu\langle \nabla u_2^{i+1},\nabla v_2\rangle \text{d}\omega\\
+A_{G_3}z^{i+1} &= \delta tA_{F_3} z^{i+1} \\
+&= \int\limits_\Omega \varepsilon p^{i+1} - \frac{\partial u_1^{i+1}}{\partial x} - \frac{\partial u_2^{i+1}}{\partial y}\\
+A_{G_4}z^{i+1} &= \int\limits_\Omega T^{i+1} v_4 \text{d}\omega - \delta tA_{F_4}z^{i+1} \\
+&= \int\limits_\Omega T^{i+1} v_4 \text{d}\omega -\left(\int\limits_\Omega -\kappa \langle \nabla T^{i+1},\nabla v_4\rangle \text{d}\omega + \int\limits_{\Gamma_1} \kappa\langle \nabla T^{i+1},\eta\rangle v_4 \text{d}s + \int\limits_{\Gamma \setminus \Gamma_1}\kappa\gamma T^{i+1}v_4\text{d}s\right) \\
+&= \int\limits_\Omega T^{i+1} v_4 \text{d}\omega + \int\limits_\Omega \kappa \langle \nabla T^{i+1},\nabla v_4\rangle \text{d}\omega - \int\limits_{\Gamma_1} \kappa\langle \nabla T^{i+1},\eta\rangle v_4 \text{d}s - \int\limits_{\Gamma \setminus \Gamma_1}\kappa\gamma T^{i+1}v_4\text{d}s
+\end{align*}
+To get the nonlinear part $N(z^i)$ and its linearization $N'(z^i)z^i$ and $N'(z^i)z^{i+1}$ respectively, we first compute with $w$ being a test function
+\begin{align*}
+&\frac{\partial}{\partial u_1}(\langle u,\nabla u_1\rangle) w \\
+=& \frac{\partial}{\partial u_1}(u_1 \frac{\partial u_1}{\partial x} + u_2 \frac{\partial u_1}{\partial y}) w\\
+=& w\frac{\partial u_1}{\partial x}+ u_1\frac{\partial w}{\partial x}+ u_2 \frac{\partial w}{\partial y}\qquad \qquad \text{product rule}
+\end{align*}
+and 
+\begin{align*}
+&\frac{\partial}{\partial u_2}(\langle u,\nabla u_2\rangle) w  \\
+=& \frac{\partial}{\partial u_2}(u_1 \frac{\partial u_2}{\partial x} + u_2 \frac{\partial u_2}{\partial y}) w\\
+=& u_1\frac{\partial w}{\partial x}+ w\frac{\partial u_2}{\partial y}+ u_2 \frac{\partial w}{\partial y}\qquad \qquad \text{product rule}
+\end{align*}
+We then obtain
+\begin{align*}
+N_{G_1}(z^i) = &-\delta t N_{F_1}(z^i)\\
+= &\int\limits_\Omega \langle u^i ,\nabla u_1^i \rangle v_1 \text{d}\omega\\
+N'_{G_1}(z^i)z^{i+1} = &-\delta t N_{F_1}'(z^i)z^{i+1}\\
+= &\delta t\int\limits_\Omega ( \underbrace{u_1^{i+1}\frac{\partial u_1^i}{\partial x} + u_1^i\frac{\partial u_1^{i+1}}{\partial x} + u_2^{i}\frac{\partial u_1^{i+1}}{\partial y}}_{-(\frac{\partial N_{F_1}(z_i)}{\partial u_1})u_1^{i+1}} 
++ \underbrace{ u_2^{i+1} \frac{\partial u_1^i}{\partial y}}_{-(\frac{\partial N_{F_1}(z_i)}{\partial u_2})u_2^{i+1}} ) v_1\text{d}\omega \\
+N_{G_2}(z^i) = &-\delta t N_{F_2}(z^i)\\
+= &\int\limits_\Omega \langle u^i ,\nabla u_2^i \rangle v_2 \text{d}\omega\\
+N'_{G_2}(z^i)z^{i+1} = &-\delta t N_{F_2}'(z^i)z^{i+1}\\
+= & \delta t\int\limits_\Omega ( \underbrace{u_1^{i}\frac{\partial u_2^{i+1}}{\partial x} + u_2^{i+1}\frac{\partial u_2^{i}}{\partial y} + u_2^{i}\frac{\partial u_2^{i+1}}{\partial y}}_{-(\frac{\partial N_{F_2}(z_i)}{\partial u_2})u_2^{i+1}} 
++ \underbrace{ u_1^{i+1} \frac{\partial u_2^i}{\partial x}}_{-(\frac{\partial N_{F_2}(z_i)}{\partial u_1})u_1^{i+1}} ) v_2\text{d}\omega \\
+N_{G_3}(z^i) =& 0 \\
+N_{G_4}(z^i) =& -\delta t N_{F_4}(z^i)\\
+=& \delta t\int\limits_\Omega \langle u,\nabla T\rangle v_4 \text{d}\omega \\
+N'_{G_4}(z^i)z^{i+1} = &-\delta t N_{F_4}'(z^i)z^{i+1}\\
+=& \delta t \int\limits_\Omega  (\underbrace{u_1^{i+1}\frac{\partial T^{i}}{\partial x}}_{-(\frac{\partial N_{F_4}(z^i)}{\partial u_1})u_1^{i+1}}+ \underbrace{u_2^{i+1}\frac{\partial T^{i}}{\partial y}}_{-(\frac{\partial N_{F_4}(z^i)}{\partial u_2})u_2^{i+1} }+\underbrace{\langle u^i,\nabla T^{i+1}\rangle }_{-(\frac{\partial N_{F_4}(z^i)}{\partial T})T^{i+1}})v_4 \text{d}\omega
+\end{align*}
+\subsection{Formulation as linear equation system}
+Using a Finite Element discretisation, we obtain finite dimensional spaces $V_i,i\in\{1,\dots,4\}$, where we can just use the Basis functions $\Phi_j,j\in \{1,\dots,N\}$ for each space as test functions $v_i,\in\{1,\dots,4\}$. This gives the lines of the equation system. Furthermore, the variables $u_1,u_2,p$ and $T$ are linear combinations of these basis functions. Hence we have, e.g for the temperature $T^{i+1}$ in the next Newton step
+\begin{align*}
+T^{i+1} = \sum\limits_{j=1}^{N} \bar{T}_j^{i+1}\Phi_j^{i+1}
+\end{align*}
+with coefficients $\bar{T}_j^{i+1} \in \mathbb{R}$. 
+\end{document}
