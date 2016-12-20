@@ -43,12 +43,12 @@ portrait
 \subsection{Model equations}
 I propose we use the following simulation model:
 \begin{align}
-\frac{\partial \mathbf{y_1}}{\partial t} + \mathbf{y_1} \cdot \nabla \mathbf{y_1} &= - \frac{1}{\rho} \nabla y_2 + \nu \Delta \mathbf{y_1} - \textbf{g} \alpha \Delta y_3 \label{eq:pde-navier-stokes}\\
-\nabla \cdot \mathbf{y_1} &= 0 \label{eq:pde-continuity}\\
-\frac{\partial y_3}{\partial t} + \mathbf{y_1} \cdot \nabla y_3 &= \kappa \Delta y_3 \label{eq:pde-heat-equation}
+\frac{\partial \mathbf{y}_1}{\partial t} + \mathbf{y}_1 \cdot \nabla \mathbf{y}_1 &= - \frac{1}{\rho} \nabla y_2 + \nu \Delta \mathbf{y}_1 - \textbf{g} \alpha \Delta y_3 \label{eq:pde-navier-stokes}\\
+\nabla \cdot \mathbf{y}_1 &= 0 \label{eq:pde-continuity}\\
+\frac{\partial y_3}{\partial t} + \mathbf{y}_1 \cdot \nabla y_3 &= \kappa \Delta y_3 \label{eq:pde-heat-equation}
 \end{align}
 \begin{align*}
-& \mathbf{y_1}: \Omega \times [0, \infty) \rightarrow \mathbb{R}^{d} \text{ is air velocity}  \\
+& \mathbf{y}_1: \Omega \times [0, \infty) \rightarrow \mathbb{R}^{d} \text{ is air velocity}  \\
 \text{where}\;\;\; &y_2: \Omega \times [0, \infty) \rightarrow \mathbb{R} \;\; \text{ is pressure} \\
 &y_3: \Omega \times [0, \infty) \rightarrow \mathbb{R} \;\; \text{ is temperature}
 \end{align*}
@@ -59,19 +59,20 @@ and coefficients
 \alpha &: \text{ coefficient of expansion } \\
 \kappa &: \text{ thermal diffusivity. } \\
 \end{align*}
-Some explanation: This model is the so-called Boussinesq approximation of the Navier-Stokes equations, which makes the simplifying assumption that the density of the fluid is constant, which leads to equation \eqref{eq:pde-continuity} (instead of $\frac{\partial \rho}{\partial t} + \nabla \cdot (\rho \mathbf{y_1}) = 0$ in the general form). Equation \eqref{eq:pde-navier-stokes} is the Boussinesq dynamical equation for describing the air flow and equation \eqref{eq:pde-heat-equation} is the equation for the temperature transfer (convection-diffusion). Here the assumption is made that no heat is generated within the domain, i.e. there is no reaction (or source) term.\\
-Note that the states $\mathbf{y_1}$ and $y_3$ are directly coupled. This is clear from a physical point of view. A change in temperature ($\Delta y_3$) causes the air to expand or contract which in turn induces an air flow and thus influences the state $\mathbf{y_1}$ (equation \eqref{eq:pde-navier-stokes}). On the other hand the air velocity determines the direction in which the convection term $\nabla y_3$ acts on the temperature in equation \eqref{eq:pde-heat-equation}.
+Some explanation: This model is the so-called Boussinesq approximation of the Navier-Stokes equations, which makes the simplifying assumption that the density of the fluid is constant, which leads to equation \eqref{eq:pde-continuity} (instead of $\frac{\partial \rho}{\partial t} + \nabla \cdot (\rho \mathbf{y}_1) = 0$ in the general form). Equation \eqref{eq:pde-navier-stokes} is the Boussinesq dynamical equation for describing the air flow and equation \eqref{eq:pde-heat-equation} is the equation for the temperature transfer (convection-diffusion). Here the assumption is made that no heat is generated within the domain, i.e. there is no reaction (or source) term.\\
+Note that the states $\mathbf{y}_1$ and $y_3$ are directly coupled. This is clear from a physical point of view. A change in temperature ($\Delta y_3$) causes the air to expand or contract which in turn induces an air flow and thus influences the state $\mathbf{y}_1$ (equation \eqref{eq:pde-navier-stokes}). On the other hand the air velocity determines the direction in which the convection term $\nabla y_3$ acts on the temperature in equation \eqref{eq:pde-heat-equation}.
 
 \subsection{Boundary conditions}
 Consider the following boundary conditions to the problem
 \begin{align}
-\mathbf{y_1} &= 0 &\text{ on } &\Gamma \times [0, \infty) \label{eq:pde-boundary-air-velocity-dirichlet} \\
-\partial_{\nu} y_3 &= u + f &\text{ on } &\Gamma_1  \times [0, \infty) \label{eq:pde-boundary-heating}\\
-\partial_{\nu} y_3 &= f &\text{ on } &(\Gamma \setminus \Gamma_1)  \times [0, \infty) \label{eq:pde-boundary-no-heating}
+- \partial_{\nu} \mathbf{y}_1 &= \gamma_1(\mathbf{y}_1 - \mathbf{g}_{D,1}) + \mathbf{g}_{N,1} &\text{ on } &\Gamma \times [0, \infty) \label{eq:pde-boundary-air-velocity-dirichlet} \\
+- \partial_{\nu} y_3 &= \gamma_3 (y_3 - g_{D,3}) + g_{N,3} &\text{ on } &\Gamma \times [0, \infty) \label{eq:pde-boundary-heating}\\
 \end{align}
-where $u: \Gamma_1 \times [0, \infty) \rightarrow \mathbb{R}$, $f: \Gamma \times [0, \infty) \rightarrow \mathbb{R}$. \\
-The motivation for using these boundary conditions is as follows. The function $f$ can be considered as an outside temperature that influences the temperature within the domain via the boundary. The boundary is split up in two parts. On the boundary segment $\Gamma_1$ we can control the heating by the function $u$ specifying the heat flux across the boundary, which also allows us to influence the temperature $y_3$ (equation \eqref{eq:pde-boundary-heating}). The other part of the boundary ($\Gamma \setminus \Gamma_1$) is not heated (equation \eqref{eq:pde-boundary-no-heating}). \\
-We also impose a Dirichlet boundary condition for the air velocity $\mathbf{y_1}$ (equation \eqref{eq:pde-boundary-air-velocity-dirichlet}). This expresses that (for now) we assume that there is no air flow into or out of the domain. \\
+where $u_1: \Gamma_1 \times [0, \infty) \rightarrow \mathbb{R}$, $f: \Gamma \times [0, \infty) \rightarrow \mathbb{R}$. \\
+This general formulation of the boundary conditions allows for a lot of flexibility in the type of boundary condition we want to consider. \\
+For example for the temperature we interpret the function $g_{D,3}$ as the temperature outside of the domain. This means that the flux of the temperature across the boundary is proportional to the difference between the temperatures of the inside and the outside. In this setting the coefficient $\gamma_3$ can be interpreted as the heat permeability of the walls. \\
+We can also incorporate the control in this formulation. To control the temperature we might have a radiator on some part of the boundary, which allows us to influence the heat flow into the domain across the boundary. In this case we set the function $g_{N, 3} = u_{3}$ on the part of the boundary where the radiator is located, and $g_{N, 3} = 0$ otherwise.\\
+\\
 Note that we do not impose boundary conditions on the pressure $y_2$. Instead the pressure should be determined naturally through the model equations.
 
 \subsection{Domain}
@@ -87,23 +88,6 @@ For now let's start in 2D and consider the following simple domain:
 \caption{Illustration of the domain and the boundary.}
 \label{fig:domain-simple}
 \end{figure}
-
-\begin{rem}
-Some general remarks and questions regarding the model
-\begin{enumerate}
-\item Coming from the direction of optimal control I prefer the notation $\mathbf{y_i}$ for the state and $u$ for the control. However, this notation does not directly convey the physical interpretation of the state in the model. We can adapt this if you want, i.e. use e.g. $\mathbf{v}$, $p$ and $T$ for the states. What do you think?
-\item 
-Julian mentioned that from a numerics point of view it would be preferable to change equation \eqref{eq:pde-continuity} to
-\begin{equation}
-\nabla \cdot \mathbf{y_1} = \varepsilon y_2
-\end{equation}
-with a small $\varepsilon > 0$ to have a more direct coupling between pressure and air velocity. I chose not to include it in the model equations above, but I wanted to mentioned it here.
-\item Should we consider other types of boundary conditions right away? Right now we only have one control (the heating) but no ventilation. Adding this would lead to a different boundary condition of Neumann-type for the state $\mathbf{y_1}$.
-\item What kind of 2D are we looking at? We could interpret the domain as a cut-through of a three-dimensional room, but we should specify if we consider it top-down or as a side-view.\\
-Julian and I talked about this briefly and both of us naturally preferred (or rather intuitively thought of) the top-down way. However, I then have difficulty understanding how the gravity acts on the system.  On the right hand side of the Navier-Stokes equation \eqref{eq:pde-navier-stokes} there appears the term $- \textbf{g} \alpha \Delta y_3$. In this expression there appears the vector $\mathbf{g}$. I think in the top-down setting the temperature does not have any influence on the air velocity, because this gravity vector just disappears. I may be wrong about this; if so please help me understand this better. Otherwise we should maybe focus on the side-view approach.
-\item How to choose parameters/coefficients? Since I do not have too much experience with the physics I didn't specify the values. Does it make sense to use just constant values of $1$? I guess we can also just use values from the literature, but I haven't looked for the appropriate parameters for air yet.
-\end{enumerate}
-\end{rem}
 
 
 \section{Weak form}
