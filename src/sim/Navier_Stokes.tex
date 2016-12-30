@@ -7,8 +7,8 @@
 \subsection{Model Equations}
 Let $u= (u_1,u_2)$ be the velocity, where $u_1,u_2: \Omega \times [0,\infty) \to \mathbb{R}$ and $p: \Omega \times [0,\infty) \to \mathbb{R}$ the pressure and $T : \Omega \times [0,\infty) \to \mathbb{R}$ the temperature variable. We then get the scalar equations:
 \begin{align}
-\frac{\partial u_1}{\partial t} + \langle u,\nabla u_1\rangle  &= -\frac{1}{\rho}\nabla p + \nu \nabla^2 u_1 - g_1\alpha (T-T_0) \label{modeleq:1}\\
-\frac{\partial u_2}{\partial t} + \langle u,\nabla u_2\rangle  &= -\frac{1}{\rho}\nabla p + \nu \nabla^2 u_2 - g_2\alpha (T-T_0) \label{modeleq:2}\\
+\frac{\partial u_1}{\partial t} + \langle u,\nabla u_1\rangle  &= -\frac{1}{\rho}\frac{\partial p}{\partial x}  + \nu \nabla^2 u_1 - g_1\alpha (T-T_0) \label{modeleq:1}\\
+\frac{\partial u_2}{\partial t} + \langle u,\nabla u_2\rangle  &= -\frac{1}{\rho}\frac{\partial p}{\partial y} + \nu \nabla^2 u_2 - g_2\alpha (T-T_0) \label{modeleq:2}\\
 \frac{\partial u_1}{\partial x_1} + \frac{\partial u_2}{\partial x_2} &= \varepsilon p \label{modeleq:3}\\
 \frac{\partial T}{\partial t} + \langle u,\nabla T\rangle &= \kappa \nabla^2 T \label{modeleq:4}
 \end{align}
@@ -52,18 +52,18 @@ u_1-u_1^\text{old} - \delta tF(u_1,u_2,p,T)
  \subsection{Weak formulation}
 Testing each line  $(\ref{modeleq:1})-(\ref{modeleq:4})$ with a test function $v_i,i\in \{1,\dots,4\}$ and integrating over the domain $\Omega$ we can now define 
  \begin{align}
-F_1(u_1,u_2,p,T)v_1 &:= \int\limits_\Omega \left(-\langle u,\nabla u_1\rangle -\frac{1}{\rho}\nabla p + \nu \nabla^2 u_1 - g_1\alpha (T-T_0)\right)v_1\text{d}\omega \label{F:1}\\
-F_2(u_1,u_2,p,T)v_2 &:=\int\limits_\Omega \left(-\langle u,\nabla u_2\rangle  -\frac{1}{\rho}\nabla p + \nu \nabla^2 u_2 - g_2\alpha (T-T_0)\right)v_2\text{d}\omega \label{F:2}\\
+F_1(u_1,u_2,p,T)v_1 &:= \int\limits_\Omega \left(-\langle u,\nabla u_1\rangle -\frac{1}{\rho}\frac{\partial p}{\partial x} + \nu \nabla^2 u_1 - g_1\alpha (T-T_0)\right)v_1\text{d}\omega \label{F:1}\\
+F_2(u_1,u_2,p,T)v_2 &:=\int\limits_\Omega \left(-\langle u,\nabla u_2\rangle  -\frac{1}{\rho}\frac{\partial p}{\partial y} + \nu \nabla^2 u_2 - g_2\alpha (T-T_0)\right)v_2\text{d}\omega \label{F:2}\\
 F_3(u_1,u_2,p,T)v_3 &:= \int\limits_\Omega\left(\varepsilon p -  \frac{\partial u_1}{\partial x_1} - \frac{\partial u_2}{\partial x_2}\right)v_3\text{d}\omega\label{F:3}\\
 F_4(u_1,u_2,p,T)v_4 &:=\int\limits_\Omega \left(-\langle u,\nabla T\rangle+ \kappa \nabla^2 T\right)v_4 \text{d}\omega\label{F:4}
  \end{align}
  partial integration and using the boundary conditions yields: \\(remember, $\nabla^2 u_1 = \Delta u_1 = \sum\limits_i \frac{\partial^2 u_1}{\partial^2 x_i}$)
  \begin{align*}
- F_1(u_1,u_2,p,T)v_1 &= \int\limits_\Omega \left(-\langle u,\nabla u_1\rangle -\frac{1}{\rho}\nabla p - g_1\alpha (T-T_0)\right)v_1 + \nu \nabla^2 u_1 v_1 \text{d}\omega \\
- &= \int\limits_\Omega \left(-\langle u,\nabla u_1\rangle -\frac{1}{\rho}\nabla p - g_1\alpha (T-T_0)\right)v_1 - \nu \langle \nabla u_1,\nabla v_1 \rangle \text{d}\omega + \int\limits_\Gamma \nu \langle \nabla u_1,\eta\rangle v_1 \text{d}s \\
- &= \int\limits_\Omega \left(-\langle u,\nabla u_1\rangle -\frac{1}{\rho}\nabla p - g_1\alpha (T-T_0)\right)v_1 - \nu \langle \nabla u_1,\nabla v_1 \rangle \text{d}\omega,  \quad \text{as }v_1 = 0 \text{ on } \Gamma \\
- F_2(u_1,u_2,p,T)v_2 &= \int\limits_\Omega \left(-\langle u,\nabla u_2\rangle -\frac{1}{\rho}\nabla p - g_2\alpha (T-T_0)\right)v_2 - \nu \langle \nabla u_2,\nabla v_2 \rangle \text{d}\omega + \int\limits_\Gamma \nu \langle \nabla u_2,\eta\rangle v_2 \text{d}s\\
- &= \int\limits_\Omega \left(-\langle u,\nabla u_2\rangle -\frac{1}{\rho}\nabla p - g_2\alpha (T-T_0)\right)v_2 - \nu \langle \nabla u_2,\nabla v_2 \rangle \text{d}\omega \quad \text{as }v_2 = 0 \text{ on } \Gamma \\\\
+ F_1(u_1,u_2,p,T)v_1 &= \int\limits_\Omega \left(-\langle u,\nabla u_1\rangle -\frac{1}{\rho}\frac{\partial p}{\partial x} - g_1\alpha (T-T_0)\right)v_1 + \nu \nabla^2 u_1 v_1 \text{d}\omega \\
+ &= \int\limits_\Omega \left(-\langle u,\nabla u_1\rangle -\frac{1}{\rho}\frac{\partial p}{\partial x} - g_1\alpha (T-T_0)\right)v_1 - \nu \langle \nabla u_1,\nabla v_1 \rangle \text{d}\omega + \int\limits_\Gamma \nu \langle \nabla u_1,\eta\rangle v_1 \text{d}s \\
+ &= \int\limits_\Omega \left(-\langle u,\nabla u_1\rangle -\frac{1}{\rho}\frac{\partial p}{\partial x} - g_1\alpha (T-T_0)\right)v_1 - \nu \langle \nabla u_1,\nabla v_1 \rangle \text{d}\omega,  \quad \text{as }v_1 = 0 \text{ on } \Gamma \\
+ F_2(u_1,u_2,p,T)v_2 &= \int\limits_\Omega \left(-\langle u,\nabla u_2\rangle -\frac{1}{\rho}\frac{\partial p}{\partial y} - g_2\alpha (T-T_0)\right)v_2 - \nu \langle \nabla u_2,\nabla v_2 \rangle \text{d}\omega + \int\limits_\Gamma \nu \langle \nabla u_2,\eta\rangle v_2 \text{d}s\\
+ &= \int\limits_\Omega \left(-\langle u,\nabla u_2\rangle -\frac{1}{\rho}\frac{\partial p}{\partial y} - g_2\alpha (T-T_0)\right)v_2 - \nu \langle \nabla u_2,\nabla v_2 \rangle \text{d}\omega \quad \text{as }v_2 = 0 \text{ on } \Gamma \\\\
  F_4(u_1,u_2,p,T)v_4 &=\int\limits_\Omega \left(-\langle u,\nabla T\rangle+ \kappa \nabla^2 T\right)v_4 \text{d}\omega\\
  &=\int\limits_\Omega -\langle u,\nabla T\rangle v_4 - \kappa \langle\nabla T,\nabla v_4\rangle \text{d}\omega + \int\limits_\Gamma \kappa \langle \nabla T,\eta \rangle v_4\text{d}s\\
  &=\int\limits_\Omega -\langle u,\nabla T\rangle v_4 - \kappa \langle\nabla T,\nabla v_4\rangle \text{d}\omega + \int\limits_{\Gamma_1} \kappa \langle \nabla T,\eta \rangle v_4\text{d}s + \int\limits_{\Gamma \setminus \Gamma_1} \kappa \langle \nabla T,\eta \rangle v_4\text{d}s\\
@@ -114,10 +114,10 @@ G'(u_1^i,u_2^i,p^i,T^i)\begin{pmatrix}
 and 
  \begin{align*}
 G'(u_1^i,u_2^i,p^i,T^i) = \begin{pmatrix}
-\frac{\partial G_1}{\partial u_1}&\frac{\partial G_1}{\partial u_2}&\frac{\partial G_1}{p}&\frac{\partial G_1}{\partial T}\\
-\frac{\partial G_2}{\partial u_1}&\frac{\partial G_2}{\partial u_2}&\frac{\partial G_2}{p}&\frac{\partial G_2}{\partial T}\\
-\frac{\partial G_3}{\partial u_1}&\frac{\partial G_3}{\partial u_2}&\frac{\partial G_3}{p}&\frac{\partial G_3}{\partial T}\\
-\frac{\partial G_4}{\partial u_1}&\frac{\partial G_4}{\partial u_2}&\frac{\partial G_4}{p}&\frac{\partial G_4}{\partial T}\\
+\frac{\partial G_1}{\partial u_1}&\frac{\partial G_1}{\partial u_2}&\frac{\partial G_1}{\partial p}&\frac{\partial G_1}{\partial T}\\
+\frac{\partial G_2}{\partial u_1}&\frac{\partial G_2}{\partial u_2}&\frac{\partial G_2}{\partial p}&\frac{\partial G_2}{\partial T}\\
+\frac{\partial G_3}{\partial u_1}&\frac{\partial G_3}{\partial u_2}&\frac{\partial G_3}{\partial p}&\frac{\partial G_3}{\partial T}\\
+\frac{\partial G_4}{\partial u_1}&\frac{\partial G_4}{\partial u_2}&\frac{\partial G_4}{\partial p}&\frac{\partial G_4}{\partial T}\\
 \end{pmatrix}
  \end{align*}
 \subsection{Simplifications of the system}
@@ -140,13 +140,13 @@ C_{G_4} &= -\int\limits_{\Omega}T^\text{old}v_4\text{d}\omega-\delta tC_{F_4} =-
 for the constant part and for the left hand side linear part
 \begin{align*}
 A_{G_1}z^{i+1} &= \int\limits_\Omega u_1^{i+1} v_1 \text{d}\omega - \delta tA_{F_1}z^{i+1} \\
-&= \int\limits_\Omega u_1^{i+1} v_1 \text{d}\omega - \delta t\int\limits_\Omega \left(-\frac{1}{\rho}\nabla p^{i+1}-g_1\alpha T^{i+1}\right)v_1 - \nu\langle \nabla u_1^{i+1},\nabla v_1\rangle \text{d}\omega\\
-&= \int\limits_\Omega u_1^{i+1} v_1 \text{d}\omega + \delta t\int\limits_\Omega \left(\frac{1}{\rho}\nabla p^{i+1}+g_1\alpha T^{i+1}\right)v_1 + \nu\langle \nabla u_1^{i+1},\nabla v_1\rangle \text{d}\omega\\
+&= \int\limits_\Omega u_1^{i+1} v_1 \text{d}\omega - \delta t\int\limits_\Omega \left(-\frac{1}{\rho}\frac{\partial p^{i+1}}{\partial x}-g_1\alpha T^{i+1}\right)v_1 - \nu\langle \nabla u_1^{i+1},\nabla v_1\rangle \text{d}\omega\\
+&= \int\limits_\Omega u_1^{i+1} v_1 \text{d}\omega + \delta t\int\limits_\Omega \left(\frac{1}{\rho}\frac{\partial p^{i+1}}{\partial x}+g_1\alpha T^{i+1}\right)v_1 + \nu\langle \nabla u_1^{i+1},\nabla v_1\rangle \text{d}\omega\\
 A_{G_2}z^{i+1} &= \int\limits_\Omega u_2^{i+1} v_2 \text{d}\omega - \delta tA_{F_2}z^{i+1} \\
-&= \int\limits_\Omega u_2^{i+1} v_2 \text{d}\omega - \delta t\int\limits_\Omega \left(-\frac{1}{\rho}\nabla p^{i+1}-g_2\alpha T^{i+1}\right)v_2 - \nu\langle \nabla u_2^{i+1},\nabla v_2\rangle \text{d}\omega\\
-&= \int\limits_\Omega u_2^{i+1} v_2 \text{d}\omega + \delta t\int\limits_\Omega \left(\frac{1}{\rho}\nabla p^{i+1}+g_2\alpha T^{i+1}\right)v_2 + \nu\langle \nabla u_2^{i+1},\nabla v_2\rangle \text{d}\omega\\
+&= \int\limits_\Omega u_2^{i+1} v_2 \text{d}\omega - \delta t\int\limits_\Omega \left(-\frac{1}{\rho}\frac{\partial p^{i+1}}{\partial y}-g_2\alpha T^{i+1}\right)v_2 - \nu\langle \nabla u_2^{i+1},\nabla v_2\rangle \text{d}\omega\\
+&= \int\limits_\Omega u_2^{i+1} v_2 \text{d}\omega + \delta t\int\limits_\Omega \left(\frac{1}{\rho}\frac{\partial p^{i+1}}{\partial y}+g_2\alpha T^{i+1}\right)v_2 + \nu\langle \nabla u_2^{i+1},\nabla v_2\rangle \text{d}\omega\\
 A_{G_3}z^{i+1} &= \delta tA_{F_3} z^{i+1} \\
-&= \int\limits_\Omega \varepsilon p^{i+1} - \frac{\partial u_1^{i+1}}{\partial x} - \frac{\partial u_2^{i+1}}{\partial y}\\
+&= \int\limits_\Omega (\varepsilon p^{i+1} - \frac{\partial u_1^{i+1}}{\partial x} - \frac{\partial u_2^{i+1}}{\partial y})v_3\\
 A_{G_4}z^{i+1} &= \int\limits_\Omega T^{i+1} v_4 \text{d}\omega - \delta tA_{F_4}z^{i+1} \\
 &= \int\limits_\Omega T^{i+1} v_4 \text{d}\omega -\left(\int\limits_\Omega -\kappa \langle \nabla T^{i+1},\nabla v_4\rangle \text{d}\omega + \int\limits_{\Gamma_1} \kappa\langle \nabla T^{i+1},\eta\rangle v_4 \text{d}s + \int\limits_{\Gamma \setminus \Gamma_1}\kappa\gamma T^{i+1}v_4\text{d}s\right) \\
 &= \int\limits_\Omega T^{i+1} v_4 \text{d}\omega + \int\limits_\Omega \kappa \langle \nabla T^{i+1},\nabla v_4\rangle \text{d}\omega - \int\limits_{\Gamma_1} \kappa\langle \nabla T^{i+1},\eta\rangle v_4 \text{d}s - \int\limits_{\Gamma \setminus \Gamma_1}\kappa\gamma T^{i+1}v_4\text{d}s

@@ -164,7 +164,7 @@ int main (int argc, char** argv)
 
   // We also set a standard linear solver flag in the EquationSystems object
   // which controls the maxiumum number of linear solver iterations allowed.
-  equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1000;
+  equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 250;
 
   // problem specifix parameters
   equation_systems.parameters.set<double>("alpha") = 1;					// first line, coefficient of expansion
@@ -176,7 +176,7 @@ int main (int argc, char** argv)
   equation_systems.parameters.set<double>("kappa") = 1;					// third line, thermal diffusivity
   equation_systems.parameters.set<double>("gamma") = 1;					// boundary conditions, heat conductivity of boundary
   equation_systems.parameters.set<double>("T_0") = 0;
-  equation_systems.parameters.set<double>("T_Dir") = 1; 				// heating on the Dirichlet boundary
+  equation_systems.parameters.set<double>("T_Dir") = 100; 				// heating on the Dirichlet boundary
   equation_systems.parameters.set<double>("T_out") = 0; 				// outside temperature for the Neumann BC
   
   // Tell the system of equations what the timestep is by using
@@ -625,20 +625,20 @@ void assemble_stokes (EquationSystems & es,
           // We know that n_u_dofs == n_v_dofs so we can compute contributions
           // for both at the same time.
           // Note that, contrary to the systems_of_equations_ex2.C example
-          // of, we assume theta = 1 here, meaning we use implicit Euler.
+          // , we assume theta = 1 here, meaning we use implicit Euler.
           for (unsigned int i=0; i<n_u_dofs; i++)
             {
-              Fu(i) += JxW[qp]*(u_old*phi[i][qp]                        // constant term from old timestep
-                                +dt*( -(U*grad_u)*phi[i][qp]            // -N(x_i) , nonlinear part at old Newton iterate.
-								     +(u*u_x + u*u_x + v*u_y)*phi[i][qp]// N'(x_i)x_i, from lhs of Newton update formula	
-								     - alpha*(T_0)*g_1*phi[i][qp] )		// constant term in F							                             
+              Fu(i) += JxW[qp]*(u_old*phi[i][qp]                        // -C constant term from old timestep
+                                +dt*( (U*grad_u)*phi[i][qp]            // -N(x_i) , nonlinear part at old Newton iterate.
+								     +(u*u_x + u*u_x + v*u_y + v*u_y)*phi[i][qp]// N'(x_i)x_i, from lhs of Newton update formula	
+								     + alpha*(T_0)*g_1*phi[i][qp] )		// constant term in F							                             
                                 );              
 
 
               Fv(i) += JxW[qp]*(v_old*phi[i][qp]                        // constant term from old timestep
-                                +dt*( -(U*grad_v)*phi[i][qp]            // -N(x_i) , nonlinear part at old Newton iterate.
-								     +(v*v_y + v*v_y + u*v_x)*phi[i][qp]// N'(x_i)x_i, from lhs of Newton update formula	
-								     - alpha*(T_0)*g_2*phi[i][qp] )		// constant term in F							                             
+                                +dt*( (U*grad_v)*phi[i][qp]            // -N(x_i) , nonlinear part at old Newton iterate.
+								     +(v*v_y + v*v_y + u*v_x+ u*v_x)*phi[i][qp]// N'(x_i)x_i, from lhs of Newton update formula	
+								     + alpha*(T_0)*g_2*phi[i][qp] )		// constant term in F							                             
                                 ); 
                                 
 
@@ -681,19 +681,19 @@ void assemble_stokes (EquationSystems & es,
               
 			  for (unsigned int j=0; j<n_u_dofs; j++)
                 {
-                  Kpu(i,j) += JxW[qp]*(psi[i][qp]*dphi[j][qp](0));  // (dF_2/du) (u^(i+1))
-                  Kpv(i,j) += JxW[qp]*(psi[i][qp]*dphi[j][qp](1));  // (dF_2/dv) (v^(i+1))
+                  Kpu(i,j) += JxW[qp]*(-psi[i][qp]*dphi[j][qp](0));  // (dF_2/du) (u^(i+1))
+                  Kpv(i,j) += JxW[qp]*(-psi[i][qp]*dphi[j][qp](1));  // (dF_2/dv) (v^(i+1))
                 }
               for (unsigned int j= 0;j< n_p_dofs;j++)
                 {
-				  Kpp(i,j) = -eps * psi[j][qp] * psi[i][qp]; // some regularisation term.
+				  Kpp(i,j) += eps * psi[j][qp] * psi[i][qp]; // some regularisation term.
 			    }
 		    }
-              
+          // Now an i-loop over the temperature degrees of freedom.               
           for (unsigned int i = 0;i<n_T_dofs; i++)
             {
-			  FT(i) = JxW[qp]*(T_old*tau[i][qp] 								     // constant term from old timestep
-						  + dt*( -(U*grad_T)*tau[i][qp] 			         // -N(x_i), nonlinear part at old Newton iterate
+			  FT(i) = JxW[qp]*(T_old*tau[i][qp] 						     // constant term from old timestep
+						  + dt*( (U*grad_T)*tau[i][qp] 			             // -N(x_i), nonlinear part at old Newton iterate
 						        +(u*T_x + v*T_y + u*T_x + v*T_y)*tau[i][qp]) // N'(x_i)x_i, from lhs of Newton update formula, basically 2(U*grad_T)
 						  );
 		     for (unsigned int j = 0; j< n_u_dofs; j++)
@@ -784,7 +784,7 @@ void assemble_stokes (EquationSystems & es,
 					  {
 					    FT(i) += 0;
 					    for(unsigned int j = 0; j<n_T_dofs; j++)
-					      KTT(i,j) += - JxW[qp]*dt*( -dtau_face[j][qp](1) * tau_face[i][qp]); // outer normal is (0,-1)
+					      KTT(i,j) += JxW[qp]*dt*( dtau_face[j][qp](1) * tau_face[i][qp]); // outer normal is (0,-1)
 					    
 					  }
 				  }
@@ -795,9 +795,9 @@ void assemble_stokes (EquationSystems & es,
                   {
 				    for(unsigned int i = 0; i<n_T_dofs; i++)
 					  {
-					    FT(i) += T_out*gamma*tau_face[i][qp]; 			  // const term	
+					    FT(i) += -T_out*kappa*gamma*tau_face[i][qp]; 			  // const term	
 					    for(unsigned int j = 0; j<n_T_dofs; j++)
-					      KTT(i,j) += gamma*tau_face[j][qp]*tau_face[i][qp];
+					      KTT(i,j) += -gamma*kappa*tau_face[j][qp]*tau_face[i][qp];
 					  }
 				  }
 			  }
