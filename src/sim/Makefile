@@ -3,7 +3,6 @@
 # Template libMesh application Makefile
 LIBMESH_DIR ?= /opt/libmesh
 
-
 # include the library options determined by configure
 include $(LIBMESH_DIR)/Make.common
 

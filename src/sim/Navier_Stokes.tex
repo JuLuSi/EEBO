@@ -43,7 +43,7 @@ If we have a differential equation, e.g for $u_1$
 we can apply implicit Euler with a timestep $\delta t$ to get
 \begin{align}
 \label{Eulerscheme}
-	\frac{u_1^\text{new}-u_1^\text{old}}{\delta t} = F(u_1^\text{new},u_2^\text{new},p^\text{new},T^\text{new})
+	\frac{u_1^\text{new}-u_1^\text{old}}{\delta t} = F(u_1^\text{new},u_2,p,T)
 \end{align}
 where we now have find the root $u_1$ of the Function
 \begin{align*}
@@ -140,16 +140,16 @@ C_{G_4} &= -\int\limits_{\Omega}T^\text{old}v_4\text{d}\omega-\delta tC_{F_4} =-
 for the constant part and for the left hand side linear part
 \begin{align*}
 A_{G_1}z^{i+1} &= \int\limits_\Omega u_1^{i+1} v_1 \text{d}\omega - \delta tA_{F_1}z^{i+1} \\
-&= \int\limits_\Omega u_1^{i+1} v_1 \text{d}\omega - \delta t\int\limits_\Omega \left(-\frac{1}{\rho}\frac{\partial p^{i+1}}{\partial x}-g_1\alpha T^{i+1}\right)v_1 - \nu\langle \nabla u_1^{i+1},\nabla v_1\rangle \text{d}\omega\\
+&= \int\limits_\Omega u_1^{i+1} v_1 \text{d}\omega - \delta t\left[\int\limits_\Omega \left(-\frac{1}{\rho}\frac{\partial p^{i+1}}{\partial x}-g_1\alpha T^{i+1}\right)v_1 - \nu\langle \nabla u_1^{i+1},\nabla v_1\rangle \text{d}\omega\right]\\
 &= \int\limits_\Omega u_1^{i+1} v_1 \text{d}\omega + \delta t\int\limits_\Omega \left(\frac{1}{\rho}\frac{\partial p^{i+1}}{\partial x}+g_1\alpha T^{i+1}\right)v_1 + \nu\langle \nabla u_1^{i+1},\nabla v_1\rangle \text{d}\omega\\
 A_{G_2}z^{i+1} &= \int\limits_\Omega u_2^{i+1} v_2 \text{d}\omega - \delta tA_{F_2}z^{i+1} \\
-&= \int\limits_\Omega u_2^{i+1} v_2 \text{d}\omega - \delta t\int\limits_\Omega \left(-\frac{1}{\rho}\frac{\partial p^{i+1}}{\partial y}-g_2\alpha T^{i+1}\right)v_2 - \nu\langle \nabla u_2^{i+1},\nabla v_2\rangle \text{d}\omega\\
+&= \int\limits_\Omega u_2^{i+1} v_2 \text{d}\omega - \delta t\left[\int\limits_\Omega \left(-\frac{1}{\rho}\frac{\partial p^{i+1}}{\partial y}-g_2\alpha T^{i+1}\right)v_2 - \nu\langle \nabla u_2^{i+1},\nabla v_2\rangle \text{d}\omega\right]\\
 &= \int\limits_\Omega u_2^{i+1} v_2 \text{d}\omega + \delta t\int\limits_\Omega \left(\frac{1}{\rho}\frac{\partial p^{i+1}}{\partial y}+g_2\alpha T^{i+1}\right)v_2 + \nu\langle \nabla u_2^{i+1},\nabla v_2\rangle \text{d}\omega\\
 A_{G_3}z^{i+1} &= \delta tA_{F_3} z^{i+1} \\
 &= \int\limits_\Omega (\varepsilon p^{i+1} - \frac{\partial u_1^{i+1}}{\partial x} - \frac{\partial u_2^{i+1}}{\partial y})v_3\\
 A_{G_4}z^{i+1} &= \int\limits_\Omega T^{i+1} v_4 \text{d}\omega - \delta tA_{F_4}z^{i+1} \\
-&= \int\limits_\Omega T^{i+1} v_4 \text{d}\omega -\left(\int\limits_\Omega -\kappa \langle \nabla T^{i+1},\nabla v_4\rangle \text{d}\omega + \int\limits_{\Gamma_1} \kappa\langle \nabla T^{i+1},\eta\rangle v_4 \text{d}s + \int\limits_{\Gamma \setminus \Gamma_1}\kappa\gamma T^{i+1}v_4\text{d}s\right) \\
-&= \int\limits_\Omega T^{i+1} v_4 \text{d}\omega + \int\limits_\Omega \kappa \langle \nabla T^{i+1},\nabla v_4\rangle \text{d}\omega - \int\limits_{\Gamma_1} \kappa\langle \nabla T^{i+1},\eta\rangle v_4 \text{d}s - \int\limits_{\Gamma \setminus \Gamma_1}\kappa\gamma T^{i+1}v_4\text{d}s
+&= \int\limits_\Omega T^{i+1} v_4 \text{d}\omega -\delta t\left(\int\limits_\Omega -\kappa \langle \nabla T^{i+1},\nabla v_4\rangle \text{d}\omega + \int\limits_{\Gamma_1} \kappa\langle \nabla T^{i+1},\eta\rangle v_4 \text{d}s + \int\limits_{\Gamma \setminus \Gamma_1}\kappa\gamma T^{i+1}v_4\text{d}s\right) \\
+&= \int\limits_\Omega T^{i+1} v_4 \text{d}\omega +\delta t\left( \int\limits_\Omega \kappa \langle \nabla T^{i+1},\nabla v_4\rangle \text{d}\omega - \int\limits_{\Gamma_1} \kappa\langle \nabla T^{i+1},\eta\rangle v_4 \text{d}s - \int\limits_{\Gamma \setminus \Gamma_1}\kappa\gamma T^{i+1}v_4\text{d}s\right)
 \end{align*}
 To get the nonlinear part $N(z^i)$ and its linearization $N'(z^i)z^i$ and $N'(z^i)z^{i+1}$ respectively, we first compute with $w$ being a test function
 \begin{align*}

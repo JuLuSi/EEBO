@@ -46,6 +46,7 @@
 #include "libmesh/mesh.h"
 #include "libmesh/mesh_generation.h"
 #include "libmesh/exodusII_io.h"
+#include "libmesh/vtk_io.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/fe.h"
 #include "libmesh/quadrature_gauss.h"
@@ -103,7 +104,7 @@ int main (int argc, char** argv)
   // higher-order elements allows us to use higher-order
   // approximation, as in example 3.
   MeshTools::Generation::build_square (mesh,
-                                       50, 50,
+                                       10, 10,
                                        0., 1.,
                                        0., 1.,
                                        TRI3);
@@ -167,15 +168,15 @@ int main (int argc, char** argv)
   equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 250;
 
   // problem specifix parameters
-  equation_systems.parameters.set<double>("alpha") = 1;					// first line, coefficient of expansion
+  equation_systems.parameters.set<double>("alpha") = 0.1;				// first line, coefficient of expansion
   equation_systems.parameters.set<double>("rho") = 1;					// first line, density of the fluid
   equation_systems.parameters.set<double>("g_1") = 0;					// gravitational acceleration in x direction
   equation_systems.parameters.set<double>("g_2") = -9.81;				// gravitational acceleration in y direction
-  equation_systems.parameters.set<double>("nu") = 1;					// first line, kinematic viscosity
-  equation_systems.parameters.set<double>("eps") = 0; 					// for second line, pressure-velocity coupling
-  equation_systems.parameters.set<double>("kappa") = 1;					// third line, thermal diffusivity
-  equation_systems.parameters.set<double>("gamma") = 1;					// boundary conditions, heat conductivity of boundary
-  equation_systems.parameters.set<double>("T_0") = 0;
+  equation_systems.parameters.set<double>("nu") = 10;					// first line, kinematic viscosity
+  equation_systems.parameters.set<double>("eps") = 0.1; 				// for second line, pressure-velocity coupling
+  equation_systems.parameters.set<double>("kappa") = 100;				// third line, thermal diffusivity
+  equation_systems.parameters.set<double>("gamma") = 0;					// boundary conditions, heat conductivity of boundary
+  equation_systems.parameters.set<double>("T_0") = 0;					// reference Temperature
   equation_systems.parameters.set<double>("T_Dir") = 100; 				// heating on the Dirichlet boundary
   equation_systems.parameters.set<double>("T_out") = 0; 				// outside temperature for the Neumann BC
   
@@ -284,16 +285,30 @@ std::cout<<"Norm of the initial value: "<<navier_stokes_system.solution->l2_norm
         {
           std::ostringstream file_name;
 
-          // We write the file in the ExodusII format.
+          //~ // We write the file in the ExodusII format.
           file_name << "out_"
                     << std::setw(3)
                     << std::setfill('0')
                     << std::right
                     << t_step + 1
-                    << ".e";
+                    << ".pvtu";
 
-          ExodusII_IO(mesh).write_equation_systems (file_name.str(),
+          //~ ExodusII_IO(mesh).write_equation_systems (file_name.str(),
+                                                    //~ equation_systems);
+          // output as vtk files
+          VTKIO(mesh).write_equation_systems (file_name.str(),
                                                     equation_systems);
+          //.gmv file
+           //~ std::ostringstream file_name2;
+
+          //~ // We write the file in the ExodusII format.
+          //~ file_name2 << "out_"
+                    //~ << std::setw(3)
+                    //~ << std::setfill('0')
+                    //~ << std::right
+                    //~ << t_step + 1
+                    //~ << ".gmv";         
+           //~ GMVIO(mesh).write_equation_systems (file_name2.str(), equation_systems);
         }
 #endif // #ifdef LIBMESH_HAVE_EXODUS_API
     } // end timestep loop.
@@ -775,7 +790,10 @@ void assemble_stokes (EquationSystems & es,
               const std::vector<std::vector<Real> > & tau_face = fe_face->get_phi();
               const std::vector<std::vector<RealGradient> > & dtau_face = fe_face->get_dphi();
               const std::vector<Real> & JxW_face = fe_face->get_JxW();
+			  const std::vector<libMesh::Point>& normal_face = fe_face->get_normals();
+			  for(auto ele:*normal_face) std::cout<<ele<<std::endl;
               fe_face->reinit(elem,s);
+              
               if(mesh.get_boundary_info().has_boundary_id(elem, s, 0)) // bottom Gamma_1
               {
 			    for(unsigned int qp = 0; qp<qface.n_points(); qp++)
@@ -784,8 +802,8 @@ void assemble_stokes (EquationSystems & es,
 					  {
 					    FT(i) += 0;
 					    for(unsigned int j = 0; j<n_T_dofs; j++)
-					      KTT(i,j) += JxW[qp]*dt*( dtau_face[j][qp](1) * tau_face[i][qp]); // outer normal is (0,-1)
-					    
+					      KTT(i,j) += JxW[qp]*dt*kappa*( dtau_face[j][qp](1) * tau_face[i][qp]); // outer normal is (0,-1)
+						  
 					  }
 				  }
 			  }
@@ -795,9 +813,9 @@ void assemble_stokes (EquationSystems & es,
                   {
 				    for(unsigned int i = 0; i<n_T_dofs; i++)
 					  {
-					    FT(i) += -T_out*kappa*gamma*tau_face[i][qp]; 			  // const term	
+					    FT(i) += -JxW[qp]*dt*T_out*kappa*gamma*tau_face[i][qp]; 			  // const term	
 					    for(unsigned int j = 0; j<n_T_dofs; j++)
-					      KTT(i,j) += -gamma*kappa*tau_face[j][qp]*tau_face[i][qp];
+					      KTT(i,j) += -JxW[qp]*dt*gamma*kappa*tau_face[j][qp]*tau_face[i][qp];
 					  }
 				  }
 			  }
