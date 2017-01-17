@@ -156,25 +156,25 @@ int main (int argc, char** argv)
   // solution of the equations.
   const Real dt = 0.01;
   navier_stokes_system.time     = 0.0;
-  const unsigned int n_timesteps = 15;
+  const unsigned int n_timesteps = 50;
 
   // The number of steps and the stopping criterion are also required
   // for the nonlinear iterations.
-  const unsigned int n_nonlinear_steps = 15;
+  const unsigned int n_nonlinear_steps = 50;
   const Real nonlinear_tolerance       = 1.e-3;
 
   // We also set a standard linear solver flag in the EquationSystems object
   // which controls the maxiumum number of linear solver iterations allowed.
-  equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 250;
+  equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 10000;
 
   // problem specifix parameters
-  equation_systems.parameters.set<double>("alpha") = 0.1;				// first line, coefficient of expansion
+  equation_systems.parameters.set<double>("alpha") = 1;					// first line, coefficient of expansion
   equation_systems.parameters.set<double>("rho") = 1;					// first line, density of the fluid
   equation_systems.parameters.set<double>("g_1") = 0;					// gravitational acceleration in x direction
-  equation_systems.parameters.set<double>("g_2") = -9.81;				// gravitational acceleration in y direction
-  equation_systems.parameters.set<double>("nu") = 10;					// first line, kinematic viscosity
+  equation_systems.parameters.set<double>("g_2") = -9.81;					// gravitational acceleration in y direction
+  equation_systems.parameters.set<double>("nu") = 1;					// first line, kinematic viscosity
   equation_systems.parameters.set<double>("eps") = 0.1; 				// for second line, pressure-velocity coupling
-  equation_systems.parameters.set<double>("kappa") = 100;				// third line, thermal diffusivity
+  equation_systems.parameters.set<double>("kappa") = 1;					// third line, thermal diffusivity
   equation_systems.parameters.set<double>("gamma") = 0;					// boundary conditions, heat conductivity of boundary
   equation_systems.parameters.set<double>("T_0") = 0;					// reference Temperature
   equation_systems.parameters.set<double>("T_Dir") = 100; 				// heating on the Dirichlet boundary
@@ -790,8 +790,8 @@ void assemble_stokes (EquationSystems & es,
               const std::vector<std::vector<Real> > & tau_face = fe_face->get_phi();
               const std::vector<std::vector<RealGradient> > & dtau_face = fe_face->get_dphi();
               const std::vector<Real> & JxW_face = fe_face->get_JxW();
-			  const std::vector<libMesh::Point>& normal_face = fe_face->get_normals();
-			  for(auto ele:*normal_face) std::cout<<ele<<std::endl;
+			  //~ const std::vector<libMesh::Point>& normal_face = fe_face->get_normals();
+			  //~ for(auto ele:*normal_face) std::cout<<ele<<std::endl;
               fe_face->reinit(elem,s);
               
               if(mesh.get_boundary_info().has_boundary_id(elem, s, 0)) // bottom Gamma_1
