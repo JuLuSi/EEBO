@@ -156,22 +156,22 @@ int main (int argc, char** argv)
   // solution of the equations.
   const Real dt = 0.01;
   navier_stokes_system.time     = 0.0;
-  const unsigned int n_timesteps = 50;
+  const unsigned int n_timesteps = 100;
 
   // The number of steps and the stopping criterion are also required
   // for the nonlinear iterations.
-  const unsigned int n_nonlinear_steps = 50;
+  const unsigned int n_nonlinear_steps = 100;
   const Real nonlinear_tolerance       = 1.e-3;
 
   // We also set a standard linear solver flag in the EquationSystems object
   // which controls the maxiumum number of linear solver iterations allowed.
-  equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 10000;
+  equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 250;
 
   // problem specifix parameters
   equation_systems.parameters.set<double>("alpha") = 1;					// first line, coefficient of expansion
   equation_systems.parameters.set<double>("rho") = 1;					// first line, density of the fluid
   equation_systems.parameters.set<double>("g_1") = 0;					// gravitational acceleration in x direction
-  equation_systems.parameters.set<double>("g_2") = -9.81;					// gravitational acceleration in y direction
+  equation_systems.parameters.set<double>("g_2") = -9.81;				// gravitational acceleration in y direction
   equation_systems.parameters.set<double>("nu") = 1;					// first line, kinematic viscosity
   equation_systems.parameters.set<double>("eps") = 0.1; 				// for second line, pressure-velocity coupling
   equation_systems.parameters.set<double>("kappa") = 1;					// third line, thermal diffusivity
@@ -182,7 +182,7 @@ int main (int argc, char** argv)
   
   // Tell the system of equations what the timestep is by using
   // the set_parameter function.  The matrix assembly routine can
-  // then reference this parameter.
+  // then reference this parameter.make
   equation_systems.parameters.set<Real> ("dt")   = dt;
 
   // The first thing to do is to get a copy of the solution at
@@ -195,6 +195,7 @@ std::cout<<"Norm of the initial value: "<<navier_stokes_system.solution->l2_norm
 
   for (unsigned int t_step=0; t_step<n_timesteps; ++t_step)
     {
+  //~ equation_systems.parameters.set<double>("T_Dir") = 100*t_step; 				// heating on the Dirichlet boundary
       // Incremenet the time counter, set the time step size as
       // a parameter in the EquationSystem.
       navier_stokes_system.time += dt;
@@ -216,7 +217,7 @@ std::cout<<"Norm of the initial value: "<<navier_stokes_system.solution->l2_norm
       // to a "reasonable" starting value.
       const Real initial_linear_solver_tol = 1.e-6;
       equation_systems.parameters.set<Real> ("linear solver tolerance") = initial_linear_solver_tol;
-
+std::cout<<"Norm of the Newton starting guess "<<navier_stokes_system.solution->l2_norm()<<std::endl;
       // Now we begin the nonlinear loop
       for (unsigned int l=0; l<n_nonlinear_steps; ++l)
         {
@@ -252,6 +253,7 @@ std::cout<<"Norm of the initial value: "<<navier_stokes_system.solution->l2_norm
                        << n_linear_iterations
                        << ", final residual: "
                        << final_linear_residual
+                       <<"( "<< equation_systems.parameters.get<Real>("linear solver tolerance")<<" )"
                        << "  Nonlinear convergence: ||u - u_old|| = "
                        << norm_delta
                        << std::endl;
@@ -274,7 +276,9 @@ std::cout<<"Norm of the initial value: "<<navier_stokes_system.solution->l2_norm
           // is chosen (heuristically) as the square of the previous linear system residual norm.
 
           equation_systems.parameters.set<Real> ("linear solver tolerance") =
-            std::min(Utility::pow<2>(final_linear_residual), initial_linear_solver_tol);
+            std::min(final_linear_residual*norm_delta*norm_delta,initial_linear_solver_tol);
+            //std::min(Utility::pow<2>(final_linear_residual), initial_linear_solver_tol);
+            //~ std::cout<<"linear solver tolerance set to "<<std::max(1e-16,std::min(Utility::pow<2>(final_linear_residual), initial_linear_solver_tol))<<std::endl;
         } // end nonlinear loop
 
 #ifdef LIBMESH_HAVE_EXODUS_API
