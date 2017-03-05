@@ -111,7 +111,7 @@ int main (int argc, char** argv)
                                        10, 10,
                                        0., 1.,
                                        0., 1.,
-                                       TRI3);
+                                       QUAD4);
 
   mesh.all_second_order();
 
@@ -136,9 +136,9 @@ int main (int argc, char** argv)
   // providing an LBB-stable pressure-velocity pair.
   system.add_variable ("p", FIRST);
 
-  // Add the Temperature variable using first order basis.
-  system.add_variable("T",FIRST);
-  
+  // Give the system a pointer to the matrix assembly
+  // function.
+  system.attach_assemble_function (assemble_stokes);
 
   // Initialize the data structures for the equation system.
   equation_systems.init ();
@@ -169,18 +169,10 @@ int main (int argc, char** argv)
   equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 250;
 
   // problem specifix parameters
-  equation_systems.parameters.set<double>("alpha") = 1;					// first line, coefficient of expansion
   equation_systems.parameters.set<double>("rho") = 1;					// first line, density of the fluid
-  equation_systems.parameters.set<double>("g_1") = 0;					// gravitational acceleration in x direction
-  equation_systems.parameters.set<double>("g_2") = -9.81;				// gravitational acceleration in y direction
   equation_systems.parameters.set<double>("nu") = 1;					// first line, kinematic viscosity
-  equation_systems.parameters.set<double>("eps") = 0.1; 				// for second line, pressure-velocity coupling
-  equation_systems.parameters.set<double>("kappa") = 1;				// third line, thermal diffusivity
-  equation_systems.parameters.set<double>("gamma") = 0;					// boundary conditions, heat conductivity of boundary
-  equation_systems.parameters.set<double>("T_0") = 1;					// reference Temperature
-  equation_systems.parameters.set<double>("T_Dir") = 100; 				// heating on the Dirichlet boundary
-  equation_systems.parameters.set<double>("T_out") = 0; 				// outside temperature for the Neumann BC
-  
+  equation_systems.parameters.set<double>("eps") = 0; 				// for second line, pressure-velocity coupling
+
   // Tell the system of equations what the timestep is by using
   // the set_parameter function.  The matrix assembly routine can
   // then reference this parameter.make
@@ -214,18 +206,11 @@ std::cout<<"Norm of the initial value: "<<navier_stokes_system.solution->l2_norm
       // the reference to the Stokes system.
       *navier_stokes_system.old_local_solution = *navier_stokes_system.current_local_solution;
 
-	  // Give the system a pointer to the matrix assembly
-      // function.
-      system.attach_assemble_function (perform_implicit_euler);
-      equation_systems.get_system("Navier-Stokes").solve();   
-      system.attach_assemble_function (assemble_stokes);
-
-
       // At the beginning of each solve, reset the linear solver tolerance
       // to a "reasonable" starting value.
       const Real initial_linear_solver_tol = 1.e-6;
       equation_systems.parameters.set<Real> ("linear solver tolerance") = initial_linear_solver_tol;
-	std::cout<<"Norm of the Newton starting guess "<<navier_stokes_system.solution->l2_norm()<<std::endl;
+	  std::cout<<"Norm of the Newton starting guess "<<navier_stokes_system.solution->l2_norm()<<std::endl;
       // Now we begin the nonlinear loop
       for (unsigned int l=0; l<n_nonlinear_steps; ++l)
         {
@@ -284,7 +269,7 @@ std::cout<<"Norm of the initial value: "<<navier_stokes_system.solution->l2_norm
           // is chosen (heuristically) as the square of the previous linear system residual norm.
 
           equation_systems.parameters.set<Real> ("linear solver tolerance") =
-            std::min(final_linear_residual*norm_delta*norm_delta,initial_linear_solver_tol);
+            std::min(final_linear_residual*final_linear_residual,initial_linear_solver_tol);
             //std::min(Utility::pow<2>(final_linear_residual), initial_linear_solver_tol);
             //~ std::cout<<"linear solver tolerance set to "<<std::max(1e-16,std::min(Utility::pow<2>(final_linear_residual), initial_linear_solver_tol))<<std::endl;
         } // end nonlinear loop
@@ -352,8 +337,6 @@ void assemble_stokes (EquationSystems & es,
   const unsigned int u_var = navier_stokes_system.variable_number ("u");
   const unsigned int v_var = navier_stokes_system.variable_number ("v");
   const unsigned int p_var = navier_stokes_system.variable_number ("p");
-  const unsigned int T_var = navier_stokes_system.variable_number ("T");
-  
 
   // Get the Finite Element type for "u".  Note this will be
   // the same as the type for "v".
@@ -362,9 +345,6 @@ void assemble_stokes (EquationSystems & es,
   // Get the Finite Element type for "p".
   FEType fe_pres_type = navier_stokes_system.variable_type(p_var);
   
-  // Get the Finite Element type for "T".
-  FEType fe_temp_type = navier_stokes_system.variable_type(T_var);
-  
   // Build a Finite Element object of the specified type for
   // the velocity variables.
   UniquePtr<FEBase> fe_vel  (FEBase::build(dim, fe_vel_type));
@@ -372,10 +352,6 @@ void assemble_stokes (EquationSystems & es,
   // Build a Finite Element object of the specified type for
   // the pressure variables.
   UniquePtr<FEBase> fe_pres (FEBase::build(dim, fe_pres_type));
-
-  // Build a Finite Element object of the specified type for
-  // the temperature variables.
-  UniquePtr<FEBase> fe_temp (FEBase::build(dim, fe_temp_type));
   
   // A Gauss quadrature rule for numerical integration.
   // Let the FEType object decide what order rule is appropriate.
@@ -386,18 +362,6 @@ void assemble_stokes (EquationSystems & es,
   // Tell the finite element objects to use our quadrature rule.
   fe_vel->attach_quadrature_rule (&qrule);
   fe_pres->attach_quadrature_rule (&qrule);
-  fe_temp->attach_quadrature_rule (&qrule);
-  
-//########################### Boundary Integration Stuff ###########################
-  // Finite element object for boundary integration
-  UniquePtr<FEBase> fe_face(FEBase::build(dim, fe_temp_type));
-  
-  // Build a Quadrature Rule with one dimension less
-  QGauss qface (dim-1, fe_temp_type.default_quadrature_order());
-  
-  // attach it
-  fe_face->attach_quadrature_rule (&qface);
-  
   
   // Here we define some references to cell-specific data that
   // will be used to assemble the linear system.
@@ -419,14 +383,6 @@ void assemble_stokes (EquationSystems & es,
   // The value of the linear shape function gradients at the quadrature points
   const std::vector<std::vector<RealGradient> > & dpsi = fe_pres->get_dphi();
   
-  // The element shape functions for the temperature 
-  // evaluated at the quadrature points.
-  const std::vector<std::vector<Real> > & tau = fe_temp->get_phi();
-
-  // The element shape function gradients for the temperature
-  // variables evaluated at the quadrature points.
-  const std::vector<std::vector<RealGradient> > & dtau = fe_temp->get_dphi();
-  
   // A reference to the DofMap object for this system.  The DofMap
   // object handles the index translation from node and element numbers
   // to degree of freedom numbers.  We will talk more about the DofMap
@@ -441,16 +397,14 @@ void assemble_stokes (EquationSystems & es,
   DenseVector<Number> Fe;
 
   DenseSubMatrix<Number>
-    Kuu(Ke), Kuv(Ke), Kup(Ke), KuT(Ke),
-    Kvu(Ke), Kvv(Ke), Kvp(Ke), KvT(Ke),
-    Kpu(Ke), Kpv(Ke), Kpp(Ke), KpT(Ke),
-    KTu(Ke), KTv(Ke), KTp(Ke), KTT(Ke);
+    Kuu(Ke), Kuv(Ke), Kup(Ke),
+    Kvu(Ke), Kvv(Ke), Kvp(Ke),
+    Kpu(Ke), Kpv(Ke), Kpp(Ke);
 
   DenseSubVector<Number>
     Fu(Fe),
     Fv(Fe),
-    Fp(Fe),
-    FT(Fe);
+    Fp(Fe);
 
   // This vector will hold the degree of freedom indices for
   // the element.  These define where in the global system
@@ -459,7 +413,6 @@ void assemble_stokes (EquationSystems & es,
   std::vector<dof_id_type> dof_indices_u;
   std::vector<dof_id_type> dof_indices_v;
   std::vector<dof_id_type> dof_indices_p;
-  std::vector<dof_id_type> dof_indices_T;
 
   // Find out what the timestep size parameter is from the system, and
   // the value of theta for the theta method.  We use implicit Euler (theta=1)
@@ -477,17 +430,9 @@ void assemble_stokes (EquationSystems & es,
   // const Real theta = 1.;
   
   // get the parameters of the system
-  const auto alpha = es.parameters.get<double>("alpha");
   const auto rho = es.parameters.get<double>("rho");
-  const auto g_1 = es.parameters.get<double>("g_1");
-  const auto g_2 = es.parameters.get<double>("g_2");
   const auto nu = es.parameters.get<double>("nu");
   const auto eps = es.parameters.get<double>("eps");
-  const auto kappa = es.parameters.get<double>("kappa");
-  const auto gamma = es.parameters.get<double>("gamma");
-  const auto T_0 = es.parameters.get<double>("T_0");
-  const auto T_Dir = es.parameters.get<double>("T_Dir");
-  const auto T_out = es.parameters.get<double>("T_out");
 
 
   // Now we will loop over all the elements in the mesh that
@@ -512,13 +457,11 @@ void assemble_stokes (EquationSystems & es,
       dof_map.dof_indices (elem, dof_indices_u, u_var);
       dof_map.dof_indices (elem, dof_indices_v, v_var);
       dof_map.dof_indices (elem, dof_indices_p, p_var);
-      dof_map.dof_indices (elem, dof_indices_T, T_var);
 
       const unsigned int n_dofs   = dof_indices.size();
       const unsigned int n_u_dofs = dof_indices_u.size();
       const unsigned int n_v_dofs = dof_indices_v.size();
       const unsigned int n_p_dofs = dof_indices_p.size();
-      const unsigned int n_T_dofs = dof_indices_T.size();
 
       // Compute the element-specific data for the current
       // element.  This involves computing the location of the
@@ -526,9 +469,7 @@ void assemble_stokes (EquationSystems & es,
       // (phi, dphi) for the current element.
       fe_vel->reinit  (elem);
       fe_pres->reinit (elem);
-	  fe_temp->reinit (elem);
-	  fe_face->reinit (elem);
-	  
+
       // Zero the element matrix and right-hand side before
       // summing them.  We use the resize member here because
       // the number of degrees of freedom might have changed from
@@ -541,10 +482,9 @@ void assemble_stokes (EquationSystems & es,
       // Reposition the submatrices...  The idea is this:
       //
       //         -           -          -  -
-      //        | Kuu Kuv Kup KuT|        | Fu |
-      //   Ke = | Kvu Kvv Kvp KvT|;  Fe = | Fv |
-      //        | Kpu Kpv Kpp KpT|        | Fp |
-      //        | KTu KTv KTp KTT|        | FT |
+      //        | Kuu Kuv Kup |        | Fu |
+      //   Ke = | Kvu Kvv Kvp |;  Fe = | Fv |
+      //        | Kpu Kpv Kpp |        | Fp |
       //         -           -          -  -
       //
       // The DenseSubMatrix.repostition () member takes the
@@ -556,28 +496,19 @@ void assemble_stokes (EquationSystems & es,
       Kuu.reposition (0, 0, n_u_dofs, n_u_dofs);
       Kuv.reposition (0, n_u_dofs, n_u_dofs, n_v_dofs);
       Kup.reposition (0, n_u_dofs + n_v_dofs, n_u_dofs, n_p_dofs);
-      KuT.reposition (0, n_u_dofs + n_v_dofs + n_p_dofs, n_u_dofs, n_T_dofs);
       
       Kvu.reposition (n_u_dofs, 0, n_v_dofs, n_u_dofs);
       Kvv.reposition (n_u_dofs, n_u_dofs, n_v_dofs, n_v_dofs);
       Kvp.reposition (n_u_dofs, n_u_dofs + n_v_dofs,  n_v_dofs, n_p_dofs);
-      KvT.reposition (n_u_dofs, n_u_dofs + n_v_dofs + n_p_dofs, n_v_dofs, n_T_dofs);
-      
+
       Kpu.reposition (n_u_dofs + n_v_dofs, 0, n_p_dofs, n_u_dofs);
       Kpv.reposition (n_u_dofs + n_v_dofs, n_u_dofs, n_p_dofs, n_v_dofs);
       Kpp.reposition (n_u_dofs + n_v_dofs, n_u_dofs + n_v_dofs, n_p_dofs, n_p_dofs);
-      KpT.reposition (n_u_dofs + n_v_dofs, n_u_dofs + n_v_dofs + n_p_dofs, n_p_dofs, n_T_dofs);
-      
-      KTu.reposition (n_u_dofs + n_v_dofs + n_p_dofs, 0, n_T_dofs, n_u_dofs);
-      KTv.reposition (n_u_dofs + n_v_dofs + n_p_dofs, n_u_dofs, n_T_dofs, n_v_dofs);
-      KTp.reposition (n_u_dofs + n_v_dofs + n_p_dofs, n_u_dofs + n_v_dofs, n_T_dofs, n_p_dofs);
-      KTT.reposition (n_u_dofs + n_v_dofs + n_p_dofs, n_u_dofs + n_v_dofs + n_p_dofs, n_T_dofs, n_T_dofs);
-      
+
       Fu.reposition (0, n_u_dofs);
       Fv.reposition (n_u_dofs, n_v_dofs);
       Fp.reposition (n_u_dofs + n_v_dofs, n_p_dofs);
-      FT.reposition (n_u_dofs + n_v_dofs + n_p_dofs, n_T_dofs);
-      
+
       // Now we will build the element matrix and right-hand-side.
       // Constructing the RHS requires the solution and its
       // gradient from the previous timestep.  This must be
@@ -590,11 +521,9 @@ void assemble_stokes (EquationSystems & es,
           Number u = 0., u_old = 0.;
           Number v = 0., v_old = 0.;
           Number p_old = 0.;
-          Number T = 0., T_old = 0.;
-          
+
           Gradient grad_u, grad_u_old;
           Gradient grad_v, grad_v_old;
-          Gradient grad_T, grad_T_old;
 
           // Compute the velocity & its gradient 
           // from the previous timestep
@@ -613,20 +542,7 @@ void assemble_stokes (EquationSystems & es,
               grad_u.add_scaled (dphi[l][qp],navier_stokes_system.current_solution (dof_indices_u[l]));
               grad_v.add_scaled (dphi[l][qp],navier_stokes_system.current_solution (dof_indices_v[l]));
 			}
-			
-          // Compute the temperature & its gradient 
-          // from the previous timestep
-          // and the old Newton iterate.			
-          for (unsigned int l=0; l<n_T_dofs; l++)
-            {      
-              // temperature from the old timestep:
-              T_old += tau[l][qp]*navier_stokes_system.old_solution (dof_indices_T[l]);
-              grad_T_old.add_scaled (dtau[l][qp],navier_stokes_system.old_solution (dof_indices_T[l]));
-                      
-              // temperature from the previous Newton iterate:
-              T += tau[l][qp]*navier_stokes_system.current_solution (dof_indices_T[l]);
-              grad_T.add_scaled (dtau[l][qp],navier_stokes_system.current_solution (dof_indices_T[l]));
-            }
+
             
           // Compute the old pressure value at this quadrature point.
           for (unsigned int l=0; l<n_p_dofs; l++)
@@ -640,9 +556,7 @@ void assemble_stokes (EquationSystems & es,
           const Number u_y = grad_u(1);
           const Number v_x = grad_v(0);
           const Number v_y = grad_v(1);
-		  
-		  const Number T_x = grad_T(0);
-		  const Number T_y = grad_T(1);
+
           // First, an i-loop over the velocity degrees of freedom.
           // We know that n_u_dofs == n_v_dofs so we can compute contributions
           // for both at the same time.
@@ -652,15 +566,15 @@ void assemble_stokes (EquationSystems & es,
             {
               Fu(i) += JxW[qp]*(u_old*phi[i][qp]                        // -C constant term from old timestep
                                 +dt*( (U*grad_u)*phi[i][qp]            // -N(x_i) , nonlinear part at old Newton iterate.
-								     +(u*u_x + u*u_x + v*u_y + v*u_y)*phi[i][qp]// N'(x_i)x_i, from lhs of Newton update formula	
-								     + alpha*(T_0)*g_1*phi[i][qp] )		// constant term in F							                             
+								     +(u*u_x + u*u_x + v*u_y + v*u_y)*phi[i][qp]// N'(x_i)x_i, from lhs of Newton update formula
+								    )
                                 );              
 
 
               Fv(i) += JxW[qp]*(v_old*phi[i][qp]                        // constant term from old timestep
                                 +dt*( (U*grad_v)*phi[i][qp]            // -N(x_i) , nonlinear part at old Newton iterate.
-								     +(v*v_y + v*v_y + u*v_x+ u*v_x)*phi[i][qp]// N'(x_i)x_i, from lhs of Newton update formula	
-								     + alpha*(T_0)*g_2*phi[i][qp] )		// constant term in F							                             
+								     +(v*v_y + v*v_y + u*v_x+ u*v_x)*phi[i][qp]// N'(x_i)x_i, from lhs of Newton update formula
+								     )		// constant term in F
                                 ); 
                                 
 
@@ -685,13 +599,10 @@ void assemble_stokes (EquationSystems & es,
               for (unsigned int j=0; j<n_p_dofs; j++)
                 {
                   Kup(i,j) += JxW[qp]*(dt*dpsi[j][qp](0)*phi[i][qp]) / rho; // (dF_1.1/dp) (p^(i+1))
-                  Kvp(i,j) += JxW[qp]*(dt*dpsi[j][qp](1)*phi[i][qp]) / rho; // (dF_1.2/dp) (p^(i+1))
-                }
-              // Matrix contributions for the uT and vT couplings
-              for (unsigned int j=0; j<n_T_dofs; j++)
-                {
-                  KuT(i,j) += JxW[qp]*(dt*tau[j][qp]*phi[i][qp]) * g_1 * alpha; // (dF_1.1/dT) (T^(i+1))
-                  KvT(i,j) += JxW[qp]*(dt*tau[j][qp]*phi[i][qp]) * g_2 * alpha; // (dF_1.2/dT) (T^(i+1))
+                 Kvp(i,j) += JxW[qp]*(dt*dpsi[j][qp](1)*phi[i][qp]) / rho; // (dF_1.2/dp) (p^(i+1))
+                 //   Kup(i,j) += JxW[qp]*(-dt*psi[j][qp]*dphi[i][qp](0)); //libmesh example
+                   // Kvp(i,j) += JxW[qp]*(-dt*psi[j][qp]*dphi[i][qp](1));
+
                 }
             }
 
@@ -705,32 +616,14 @@ void assemble_stokes (EquationSystems & es,
                 {
                   Kpu(i,j) += JxW[qp]*(-psi[i][qp]*dphi[j][qp](0));  // (dF_2/du) (u^(i+1))
                   Kpv(i,j) += JxW[qp]*(-psi[i][qp]*dphi[j][qp](1));  // (dF_2/dv) (v^(i+1))
+                   // Kpu(i,j) += JxW[qp]*psi[i][qp]*dphi[j][qp](0); //libmesh example
+                 //   Kpv(i,j) += JxW[qp]*psi[i][qp]*dphi[j][qp](1);
+
                 }
               for (unsigned int j= 0;j< n_p_dofs;j++)
                 {
 				  Kpp(i,j) += eps * psi[j][qp] * psi[i][qp]; // some regularisation term.
 			    }
-		    }
-          // Now an i-loop over the temperature degrees of freedom.               
-          for (unsigned int i = 0;i<n_T_dofs; i++)
-            {
-			  FT(i) += JxW[qp]*(T_old*tau[i][qp] 						     // constant term from old timestep
-						  + dt*( (U*grad_T)*tau[i][qp] 			             // -N(x_i), nonlinear part at old Newton iterate
-						        +(u*T_x + v*T_y + u*T_x + v*T_y)*tau[i][qp]) // N'(x_i)x_i, from lhs of Newton update formula, basically 2(U*grad_T)
-						  );
-		     for (unsigned int j = 0; j< n_u_dofs; j++)
-			   {
-			     KTu(i,j) += JxW[qp]*phi[j][qp]* T_x * phi[i][qp];
-			     KTv(i,j) += JxW[qp]*phi[j][qp]* T_y * phi[i][qp];
-			   }
-			 for (unsigned int j = 0; j< n_T_dofs; j++)
-			   {
-			     KTT(i,j) += JxW[qp]*( tau[i][qp] * tau[j][qp] 
-								+ dt*( (U*dtau[j][qp]) * tau[i][qp] +   // <U,grad T^(i+1)> * v3
-									kappa * (dtau[j][qp]*dtau[i][qp]))  // kappa* <grad T^(i+1) , grad v3> 
-									);
-			   }
-		     
 		    }
         } // end of the quadrature point qp-loop
 
@@ -765,8 +658,11 @@ void assemble_stokes (EquationSystems & es,
                   // 2=top
                   // 3=left
 
-                  // Set u = 0  everywhere 
-                  const Real u_value = 0.;
+                  // Set u = 0  everywhere
+               //   const Real u_value = 0.;
+                    const Real u_value =
+                            (mesh.get_boundary_info().has_boundary_id(elem, s, 2))
+                            ? 1. : 0.;
                   // Set v = 0 everywhere
                   const Real v_value = 0.;
                     
@@ -783,51 +679,20 @@ void assemble_stokes (EquationSystems & es,
                         // Right-hand-side contribution.
                         Fu(n) += penalty*u_value;
                         Fv(n) += penalty*v_value;
-                        // Set T = T_Dir on the bottom boundary
-                        if(mesh.get_boundary_info().has_boundary_id(elem, s, 0))
-						  {
-						    KTT(n,n) += penalty;
-						    FT(n) += penalty*T_Dir;
-						  }
-                        
                       }                
                 } // end face node loop
-                
-              // the boundary integrals  
-              const std::vector<std::vector<Real> > & tau_face = fe_face->get_phi();
-              const std::vector<std::vector<RealGradient> > & dtau_face = fe_face->get_dphi();
-              const std::vector<Real> & JxW_face = fe_face->get_JxW();
-			  //~ const std::vector<libMesh::Point>& normal_face = fe_face->get_normals();
-			  //~ for(auto ele:*normal_face) std::cout<<ele<<std::endl;
-              fe_face->reinit(elem,s);
-              
-              if(mesh.get_boundary_info().has_boundary_id(elem, s, 0)) // bottom Gamma_1
-              {
-			    for(unsigned int qp = 0; qp<qface.n_points(); qp++)
-                  {
-				    for(unsigned int i = 0; i<n_T_dofs; i++)
-					  {
-					    FT(i) += 0;
-					    for(unsigned int j = 0; j<n_T_dofs; j++)
-					      KTT(i,j) += JxW[qp]*dt*kappa*( dtau_face[j][qp](1) * tau_face[i][qp]); // outer normal is (0,-1)
-						  
-					  }
-				  }
-			  }
-			  else // Gamma / Gamma_1, here we hav <grad T, eta > = f = gamma*(T-T_out)
-			  {
-			    for(unsigned int qp = 0; qp<qface.n_points(); qp++)
-                  {
-				    for(unsigned int i = 0; i<n_T_dofs; i++)
-					  {
-					    FT(i) += -JxW[qp]*dt*T_out*kappa*gamma*tau_face[i][qp]; 			  // const term	
-					    for(unsigned int j = 0; j<n_T_dofs; j++)
-					      KTT(i,j) += -JxW[qp]*dt*gamma*kappa*tau_face[j][qp]*tau_face[i][qp];
-					  }
-				  }
-			  }
 			  
             } // end if (elem->neighbor(side) == libmesh_nullptr)
+
+//          const unsigned int pressure_node = 0;
+//          const Real p_value               = 0.0;
+//          for (unsigned int c=0; c<elem->n_nodes(); c++)
+//              if (elem->node_id(c) == pressure_node)
+//              {
+//                  Kpp(c,c) += penalty;
+//                  Fp(c)    += penalty*p_value;
+//              }
+
 
       } // end boundary condition section
 

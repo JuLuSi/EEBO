@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99d (TeX Live 2015/Debian)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: Navier_Stokes.aux
+The style file: abbrv.bst
+Database file #1: bib.bib
+Warning--there's a number but no volume in BenziNumSolSaddle
+You've used 3 entries,
+            2118 wiz_defined-function locations,
+            517 strings with 4291 characters,
+and the built_in function-call counts, 921 in all, are:
+= -- 87
+> -- 44
+< -- 0
++ -- 17
+- -- 14
+* -- 68
+:= -- 166
+add.period$ -- 9
+call.type$ -- 3
+change.case$ -- 16
+chr.to.int$ -- 0
+cite$ -- 4
+duplicate$ -- 32
+empty$ -- 70
+format.name$ -- 14
+if$ -- 186
+int.to.chr$ -- 0
+int.to.str$ -- 3
+missing$ -- 3
+newline$ -- 18
+num.names$ -- 6
+pop$ -- 13
+preamble$ -- 1
+purify$ -- 13
+quote$ -- 0
+skip$ -- 21
+stack$ -- 0
+substring$ -- 51
+swap$ -- 3
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 12
+warning$ -- 1
+while$ -- 8
+width$ -- 4
+write$ -- 34
+(There was 1 warning)

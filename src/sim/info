@@ -1,0 +1,18 @@
+run in parallel:
+	-/opt/petsc-3.7.4/petsc-openmpi-debug/bin/mpirun -np 4 example-opt 
+
+options for petsc (handed over by libmesh)
+	-ksp_view : verbose output of krylov solver
+	-pc_type : set preconditioner type (e.g jacobi, bjacobi, ilu,icc,lu,cholesky...) s.80./ex	
+	-ksp_type : set krylov solver(e.g richardson,chebyshev,cg,bicg,gmres...) s.77 
+
+./example-opt -pc_type lu -ksp_type preonly for direct solution of newton method
+
+
+SCHUR:
+	-pc_fieldsplit_type schur
+	-pc_fieldsplit_schur_fact_type <diag,lower,upper,full>
+
+
+./example-opt -pc_type fieldsplit -pc_fieldsplit_detect_saddle_point -pc_fieldsplit_type schur -pc_fieldsplit_schur_fact_type full -pc_fieldsplit_schur_precondition self
+

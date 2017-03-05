@@ -1,0 +1,20 @@
+\begin{thebibliography}{1}
+
+\bibitem{BenziNumSolSaddle}
+M.~Benzi, G.~H. Golub, and J.~Liesen.
+\newblock Numerical solution of saddle point problems.
+\newblock {\em Acta Numerica}, (14):1--137, 2005.
+
+\bibitem{twoprecond07}
+A.~de~Niet and F.~Wubs.
+\newblock Two preconditioners for saddle point problems in fluid flows.
+\newblock {\em INTERNATIONAL JOURNAL FOR NUMERICAL METHODS IN FLUIDS}, 2007.
+
+\bibitem{ZulehnerPreconditionersPDE}
+J.~Sch\"oberl and W.~Zulehner.
+\newblock Symmetric indefinite preconditioners for saddle point problems with
+  applications to pde-constrained optimization problems.
+\newblock {\em SIAM Journal on Matrix Analysis and Applications},
+  29(3):752--773, 2007.
+
+\end{thebibliography}

@@ -1,0 +1,14 @@
+% This file was created with JabRef 2.10.
+% Encoding: UTF-8
+
+
+@Article{twoprecond07,
+  Title                    = {Two preconditioners for saddle point problems in fluid flows},
+  Author                   = {A.C. de Niet and F.W. Wubs},
+  Journal                  = {INTERNATIONAL JOURNAL FOR NUMERICAL METHODS IN FLUIDS},
+  Year                     = {2007},
+
+  Owner                    = {manuel},
+  Timestamp                = {2017.02.24}
+}
+
