@@ -126,6 +126,9 @@ int main (int argc, char** argv)
   TransientLinearImplicitSystem & system =
     equation_systems.add_system<TransientLinearImplicitSystem> ("Navier-Stokes");
 
+  TransientLinearImplicitSystem & system_simp =
+    equation_systems.add_system<TransientLinearImplicitSystem> ("Navier-Stokes-Simp");
+
   // Add the variables "u" & "v" to "Navier-Stokes".  They
   // will be approximated using second-order approximation.
   system.add_variable ("u", SECOND);
@@ -157,7 +160,7 @@ int main (int argc, char** argv)
 
   // Now we begin the timestep loop to compute the time-accurate
   // solution of the equations.
-  const Real dt = 0.01;
+  const Real dt = 0.001;
   navier_stokes_system.time     = 0.0;
   const unsigned int n_timesteps = 15;
 
@@ -180,7 +183,7 @@ int main (int argc, char** argv)
   equation_systems.parameters.set<double>("kappa") = 1;				// third line, thermal diffusivity
   equation_systems.parameters.set<double>("gamma") = 0;					// boundary conditions, heat conductivity of boundary
   equation_systems.parameters.set<double>("T_0") = 1;					// reference Temperature
-  equation_systems.parameters.set<double>("T_Dir") = 100; 				// heating on the Dirichlet boundary
+  equation_systems.parameters.set<double>("T_Dir") = 10; 				// heating on the Dirichlet boundary
   equation_systems.parameters.set<double>("T_out") = 0; 				// outside temperature for the Neumann BC
   
   // Tell the system of equations what the timestep is by using
@@ -188,13 +191,7 @@ int main (int argc, char** argv)
   // then reference this parameter.make
   equation_systems.parameters.set<Real> ("dt")   = dt;
 
-  // The first thing to do is to get a copy of the solution at
-  // the current nonlinear iteration.  This value will be used to
-  // determine if we can exit the nonlinear loop.
-  UniquePtr<NumericVector<Number> >
-    last_nonlinear_soln (navier_stokes_system.solution->clone());
-    
-std::cout<<"Norm of the initial value: "<<navier_stokes_system.solution->l2_norm()<<std::endl;
+  std::cout<<"Norm of the initial value: "<<navier_stokes_system.solution->l2_norm()<<std::endl;
 
   for (unsigned int t_step=0; t_step<n_timesteps; ++t_step)
     {
@@ -214,24 +211,77 @@ std::cout<<"Norm of the initial value: "<<navier_stokes_system.solution->l2_norm
       // Now we need to update the solution vector from the
       // previous time step.  This is done directly through
       // the reference to the Stokes system.
-      *navier_stokes_system.old_local_solution = *navier_stokes_system.current_local_solution;
+      *navier_stokes_system.older_local_solution = *navier_stokes_system.old_local_solution;
 
       // At the beginning of each solve, reset the linear solver tolerance
       // to a "reasonable" starting value.
       const Real initial_linear_solver_tol = 1.e-6;
       equation_systems.parameters.set<Real> ("linear solver tolerance") = initial_linear_solver_tol;
-	  std::cout<<"Norm of the Newton starting guess "<<navier_stokes_system.solution->l2_norm()<<std::endl;
+	  std::cout<<"Norm of the system.solution "<<navier_stokes_system.solution->l2_norm()<<std::endl;
+	  std::cout<<"Norm of the system.current_local_solution "<<navier_stokes_system.current_local_solution->l2_norm()<<std::endl;
 	  
+	 // navier_stokes_system.old_local_solution = navier_stokes_system.current_local_solution->clone();
+	  
+      navier_stokes_system.solution->zero();
+     
       // Now we begin the nonlinear loop
       for (unsigned int l=0; l<n_nonlinear_steps; ++l)
-        {
-          // This is the solution of the last Newton loop
-          last_nonlinear_soln->add(*navier_stokes_system.solution);
-
+        {		  
+		  std::cout<<"Norm of the system.solution "<<navier_stokes_system.solution->l2_norm()<<std::endl;
+	      std::cout<<"Norm of the system.current_local_solution "<<navier_stokes_system.current_local_solution->l2_norm()<<std::endl;
+	      std::cout<<"Norm of the system.old_local_solution "<<navier_stokes_system.old_local_solution->l2_norm()<<std::endl;
+	      std::cout<<"Norm of the system.older_local_solution "<<navier_stokes_system.older_local_solution->l2_norm()<<std::endl;
+	      
           // Assemble & solve the linear system to get the new Newton UPDATE!
+		  equation_systems.parameters.set<double>("lambda") = 0.;
           perf_log.push("linear solve");
           equation_systems.get_system("Navier-Stokes").solve();
           perf_log.pop("linear solve");
+          auto dz = navier_stokes_system.solution->clone();
+
+          
+          
+          double theta = 1., omega = 0., lambda = 1.;
+		  equation_systems.parameters.set<double>("lambda") = lambda;
+		  auto norm_dz = dz->l2_norm();
+		  std::cout<<"|dz|"<<norm_dz<<std::endl;
+		  do
+		  {
+			navier_stokes_system.solution = dz->clone();
+			navier_stokes_system.current_local_solution = dz->clone();
+	        
+ 		    std::cout<<"Norm of the system.solution "<<navier_stokes_system.solution->l2_norm()<<std::endl;
+	        std::cout<<"Norm of the system.current_local_solution "<<navier_stokes_system.current_local_solution->l2_norm()<<std::endl;	
+	        
+	        // solve G(z)\bar{dz} = -G(z+lambda dz);
+	        // currently old_solution = z
+	        // 			 current_solution = dz
+	        // will be used in assembly function
+	        
+			perf_log.push("linear solve");
+			equation_systems.get_system("Navier-Stokes").solve();
+			perf_log.pop("linear solve");
+			
+ 		    std::cout<<"Norm of the system.solution "<<navier_stokes_system.solution->l2_norm()<<std::endl;
+	        std::cout<<"Norm of the system.current_local_solution "<<navier_stokes_system.current_local_solution->l2_norm()<<std::endl;	
+	        
+	        auto numerator = navier_stokes_system.solution->clone();
+	        numerator->add(-(1-lambda), *dz);
+	        	        
+			theta = numerator->l2_norm();
+			theta /= lambda*norm_dz;
+			std::cout<<" theta "<<theta<<std::endl;
+			
+			omega = theta / lambda*norm_dz;			
+			std::cout<<" omega "<<omega<<std::endl;
+
+			lambda = std::min(1., 1/(norm_dz*omega));
+			
+			std::cout<<" lambda "<<lambda<<std::endl;
+		  }while( theta >= 1. );
+
+		  navier_stokes_system.old_local_solution->add (lambda,*dz);
+//		  navier_stokes_system.old_local_solution += lambda*dz;
 
           // Compute the l2 norm of the newton update
 		  const Real norm_delta = navier_stokes_system.solution->l2_norm();
@@ -257,7 +307,7 @@ std::cout<<"Norm of the initial value: "<<navier_stokes_system.solution->l2_norm
           // this nonlinear iterate and the last is sufficiently small, AND
           // if the most recent linear system was solved to a sufficient tolerance.
           if ((norm_delta < nonlinear_tolerance) &&
-              (navier_stokes_system.final_linear_residual() < nonlinear_tolerance))
+              (navier_stokes_system.final_linear_residual() < nonlinear_tolerance) && lambda == 1)
             {
               libMesh::out << " Nonlinear solver converged at step "
                            << l
@@ -475,7 +525,7 @@ void assemble_stokes (EquationSystems & es,
   const auto T_0 = es.parameters.get<double>("T_0");
   const auto T_Dir = es.parameters.get<double>("T_Dir");
   const auto T_out = es.parameters.get<double>("T_out");
-
+  const auto lambda = es.parameters.get<double>("lambda");
 
   // Now we will loop over all the elements in the mesh that
   // live on the local processor. We will compute the element
@@ -579,10 +629,19 @@ void assemble_stokes (EquationSystems & es,
           Number p = 0., p_old = 0.;
           Number T = 0., T_old = 0.;
           
+          // for the simp. Newton step
+          Number du = 0.; 
+          Number dv = 0.;
+          Number dp = 0.;
+          Number dT = 0.;
+          
           Gradient grad_u, grad_u_old;
           Gradient grad_v, grad_v_old;
           Gradient grad_p, grad_p_old;
           Gradient grad_T, grad_T_old;
+          
+          // for the simp. Newton step
+          Gradient grad_du, grad_dv, grad_dp, grad_dT;
 
           // Compute the velocity & its gradient 
           // from the previous timestep
@@ -590,17 +649,30 @@ void assemble_stokes (EquationSystems & es,
           for (unsigned int l=0; l<n_u_dofs; l++)
             {
               // Velocity from the old timestep:
-              u_old += phi[l][qp]*navier_stokes_system.old_solution (dof_indices_u[l]);
-              v_old += phi[l][qp]*navier_stokes_system.old_solution (dof_indices_v[l]);
-              grad_u_old.add_scaled (dphi[l][qp],navier_stokes_system.old_solution (dof_indices_u[l]));
-              grad_v_old.add_scaled (dphi[l][qp],navier_stokes_system.old_solution (dof_indices_v[l]));
+              u_old += phi[l][qp]*navier_stokes_system.older_solution (dof_indices_u[l]);
+              v_old += phi[l][qp]*navier_stokes_system.older_solution (dof_indices_v[l]);
+              grad_u_old.add_scaled (dphi[l][qp],navier_stokes_system.older_solution (dof_indices_u[l]));
+              grad_v_old.add_scaled (dphi[l][qp],navier_stokes_system.older_solution (dof_indices_v[l]));
 
               // Velocity from the previous Newton iterate:
-              u += phi[l][qp]*navier_stokes_system.current_solution (dof_indices_u[l]);
-              v += phi[l][qp]*navier_stokes_system.current_solution (dof_indices_v[l]);
-              grad_u.add_scaled (dphi[l][qp],navier_stokes_system.current_solution (dof_indices_u[l]));
-              grad_v.add_scaled (dphi[l][qp],navier_stokes_system.current_solution (dof_indices_v[l]));
+              u += phi[l][qp]*navier_stokes_system.old_solution (dof_indices_u[l]);
+              v += phi[l][qp]*navier_stokes_system.old_solution (dof_indices_v[l]);
+              grad_u.add_scaled (dphi[l][qp],navier_stokes_system.old_solution (dof_indices_u[l]));
+              grad_v.add_scaled (dphi[l][qp],navier_stokes_system.old_solution (dof_indices_v[l]));
+              
+              // for the simp. Newton step
+              
+              du += phi[l][qp]*navier_stokes_system.current_solution (dof_indices_u[l]);
+              dv += phi[l][qp]*navier_stokes_system.current_solution (dof_indices_v[l]);
+              grad_du.add_scaled (dphi[l][qp],navier_stokes_system.current_solution (dof_indices_u[l]));
+              grad_dv.add_scaled (dphi[l][qp],navier_stokes_system.current_solution (dof_indices_v[l]));
 			}
+	        //For the assembly of the rhs 		
+			// z+ lambda*dz
+			auto u_rhs = u + lambda* du;
+			auto v_rhs = v + lambda* dv;
+			auto grad_u_rhs = grad_u + lambda*grad_du;
+			auto grad_v_rhs = grad_v + lambda*grad_dv;
 			
           // Compute the temperature & its gradient 
           // from the previous timestep
@@ -608,23 +680,39 @@ void assemble_stokes (EquationSystems & es,
           for (unsigned int l=0; l<n_T_dofs; l++)
             {      
               // temperature from the old timestep:
-              T_old += tau[l][qp]*navier_stokes_system.old_solution (dof_indices_T[l]);
-              grad_T_old.add_scaled (dtau[l][qp],navier_stokes_system.old_solution (dof_indices_T[l]));
+              T_old += tau[l][qp]*navier_stokes_system.older_solution (dof_indices_T[l]);
+              grad_T_old.add_scaled (dtau[l][qp],navier_stokes_system.older_solution (dof_indices_T[l]));
                       
               // temperature from the previous Newton iterate:
-              T += tau[l][qp]*navier_stokes_system.current_solution (dof_indices_T[l]);
-              grad_T.add_scaled (dtau[l][qp],navier_stokes_system.current_solution (dof_indices_T[l]));
+              T += tau[l][qp]*navier_stokes_system.old_solution (dof_indices_T[l]);
+              grad_T.add_scaled (dtau[l][qp],navier_stokes_system.old_solution (dof_indices_T[l]));
+			  
+			  // for the simp. Newton step
+              dT += tau[l][qp]*navier_stokes_system.current_solution (dof_indices_T[l]);
+              grad_dT.add_scaled (dtau[l][qp],navier_stokes_system.current_solution (dof_indices_T[l]));             
             }
+	        //For the assembly of the rhs 		
+			// z+ lambda*dz
+            auto T_rhs = T + lambda* dT;
+            auto grad_T_rhs = grad_T + lambda* grad_dT;
             
           // Compute the old pressure value at this quadrature point.
           for (unsigned int l=0; l<n_p_dofs; l++)
             {
-			  p_old += psi[l][qp]*navier_stokes_system.old_solution (dof_indices_p[l]);
+			  p_old += psi[l][qp]*navier_stokes_system.older_solution (dof_indices_p[l]);
 			  
 			  //pressure from the old Newton iterate
-			  p += psi[l][qp]*navier_stokes_system.current_solution (dof_indices_T[l]);
+			  p += psi[l][qp]*navier_stokes_system.old_solution (dof_indices_T[l]);
 			  grad_p.add_scaled (dpsi[l][qp],navier_stokes_system.old_solution (dof_indices_T[l]));
+			  
+			  // for the simp. Newton step
+			  dp += psi[l][qp]*navier_stokes_system.current_solution (dof_indices_T[l]);
+			  grad_dp.add_scaled (dpsi[l][qp],navier_stokes_system.current_solution (dof_indices_T[l]));
 		    }
+	        //For the assembly of the rhs 		
+			// z+ lambda*dz
+			auto p_rhs = p + lambda* dp;
+			auto grad_p_rhs = grad_p + lambda* grad_dp;
 
           // Definitions for convenience.  It is sometimes simpler to do a
           // dot product if you have the full vector at your disposal.
@@ -638,6 +726,9 @@ void assemble_stokes (EquationSystems & es,
 		  const Number p_y = grad_p(1);
 		  const Number T_x = grad_T(0);
 		  const Number T_y = grad_T(1);
+		  
+	      //For the assembly of the rhs 	
+	      const NumberVectorValue U_rhs (u_rhs,v_rhs);
           // First, an i-loop over the velocity degrees of freedom.
           // We know that n_u_dofs == n_v_dofs so we can compute contributions
           // for both at the same time.
@@ -646,20 +737,20 @@ void assemble_stokes (EquationSystems & es,
           for (unsigned int i=0; i<n_u_dofs; i++)
             {
               Fu(i) += JxW[qp]*(u_old*phi[i][qp]                        // -C constant term from old timestep
-                                +dt*( (U*grad_u)*phi[i][qp]            // -N(x_i) , nonlinear part at old Newton iterate.
+                                +dt*( (U_rhs*grad_u_rhs)*phi[i][qp]            // -N(x_i) , nonlinear part at old Newton iterate.
 								     + alpha*(T_0)*g_1*phi[i][qp] )		// constant term in F			
-								- u * phi[i][qp] 						// NEW Az_i term on rhs
-								  -dt* ( (p_x/rho + g_1*alpha*T)*phi[i][qp]
-										 + nu*grad_u*dphi[i][qp] )
+								- u_rhs * phi[i][qp] 						// NEW Az_i term on rhs
+								  -dt* ( (grad_p_rhs(0)/rho + g_1*alpha*T)*phi[i][qp]
+										 + nu*grad_u_rhs*dphi[i][qp] )
                                 );              
 
 
               Fv(i) += JxW[qp]*(v_old*phi[i][qp]                        // constant term from old timestep
-                                +dt*( (U*grad_v)*phi[i][qp]            // -N(x_i) , nonlinear part at old Newton iterate.
+                                +dt*( (U_rhs*grad_v_rhs)*phi[i][qp]            // -N(x_i) , nonlinear part at old Newton iterate.
 								     + alpha*(T_0)*g_2*phi[i][qp] )		// constant term in F	
-								-v * phi[i][qp]							// NEW Az_i term on rhs
-								  -dt* ( (p_y/rho + g_2*alpha*T)*phi[i][qp]
-								         + nu*grad_v*dphi[i][qp] )
+								-v_rhs * phi[i][qp]							// NEW Az_i term on rhs
+								  -dt* ( (grad_p_rhs(1)/rho + g_2*alpha*T)*phi[i][qp]
+								         + nu*grad_v_rhs*dphi[i][qp] )
                                 ); 
                                 
 
@@ -710,15 +801,15 @@ void assemble_stokes (EquationSystems & es,
 				  Kpp(i,j) += eps * psi[j][qp] * psi[i][qp]; // some regularisation term.
 			    }
 			  
-			  Fp(i) = JxW[qp]*(eps * p - u_x - v_y)* psi[i][qp];
+			  Fp(i) = JxW[qp]*(eps * p_rhs - grad_u_rhs(0) - grad_v_rhs(1))* psi[i][qp];
 		    }
           // Now an i-loop over the temperature degrees of freedom.               
           for (unsigned int i = 0;i<n_T_dofs; i++)
             {
 			  FT(i) += JxW[qp]*(T_old*tau[i][qp] 						     // constant term from old timestep
-						  + dt*( (U*grad_T)*tau[i][qp])			             // -N(x_i), nonlinear part at old Newton iterate
-						  - T*tau[i][qp] 									 // NEW LINEAR PART on rhs
-						  - dt * (kappa* grad_T*dtau[i][qp]));
+						  + dt*( (U_rhs*grad_T_rhs)*tau[i][qp])			             // -N(x_i), nonlinear part at old Newton iterate
+						  - T_rhs*tau[i][qp] 									 // NEW LINEAR PART on rhs
+						  - dt * (kappa* grad_T_rhs*dtau[i][qp]));
 		     for (unsigned int j = 0; j< n_u_dofs; j++)
 			   {
 			     KTu(i,j) += JxW[qp]*phi[j][qp]* T_x * phi[i][qp];
@@ -801,21 +892,24 @@ void assemble_stokes (EquationSystems & es,
 			  //~ const std::vector<libMesh::Point>& normal_face = fe_face->get_normals();
 			  //~ for(auto ele:*normal_face) std::cout<<ele<<std::endl;
               fe_face->reinit(elem,s);
-              Gradient grad_T; 
-              Number T = 0.;
               if(mesh.get_boundary_info().has_boundary_id(elem, s, 0)) // bottom Gamma_1
               {
 			    for(unsigned int qp = 0; qp<qface.n_points(); qp++)
                   {
-					  
+					Gradient grad_T, grad_dT, grad_T_rhs; 
 					for (unsigned int l=0; l<n_T_dofs; l++)
 					  {
-						T += tau[l][qp]*navier_stokes_system.current_solution (dof_indices_T[l]);	
-						grad_T.add_scaled (dtau[l][qp],navier_stokes_system.current_solution (dof_indices_T[l]));
+						grad_T.add_scaled (dtau[l][qp],navier_stokes_system.old_solution (dof_indices_T[l]));			
+						grad_dT.add_scaled (dtau[l][qp],navier_stokes_system.current_solution (dof_indices_T[l]));
+
 					  }
+					  // for the simp newton step
+					  // z+lambda*dz
+					  grad_T_rhs = grad_T + lambda* grad_dT;
+					  
 				    for(unsigned int i = 0; i<n_T_dofs; i++)
 					  {
-					    FT(i) += JxW[qp] * dt * kappa * (-grad_T(1)+tau_face[i][qp]);		// new linear part on rhs
+					    FT(i) += JxW[qp] * dt * kappa * (-grad_T_rhs(1)+tau_face[i][qp]);		// new linear part on rhs
 					    for(unsigned int j = 0; j<n_T_dofs; j++)
 					      KTT(i,j) += JxW[qp]*dt*kappa*( dtau_face[j][qp](1) * tau_face[i][qp]); // outer normal is (0,-1)
 						  
@@ -826,10 +920,20 @@ void assemble_stokes (EquationSystems & es,
 			  {
 			    for(unsigned int qp = 0; qp<qface.n_points(); qp++)
                   {
+					Number T = 0., dT = 0., T_rhs = 0.;  
+					for (unsigned int l=0; l<n_T_dofs; l++)
+					  {
+						T += tau[l][qp]*navier_stokes_system.old_solution (dof_indices_T[l]);							
+						dT += tau[l][qp]*navier_stokes_system.current_solution (dof_indices_T[l]);	
+					  }
+					  // for the simp newton step
+					  // z+lambda*dz
+					  T_rhs = T + lambda* dT;
+				
 				    for(unsigned int i = 0; i<n_T_dofs; i++)
 					  {
 					    FT(i) += JxW[qp]*dt*(-T_out*kappa*gamma*tau_face[i][qp] 			  // const term	
-											+kappa*gamma*T*tau_face[i][qp]);				  // new linear part on rhs
+											+kappa*gamma*T_rhs*tau_face[i][qp]);				  // new linear part on rhs
 					    for(unsigned int j = 0; j<n_T_dofs; j++)
 					      KTT(i,j) += -JxW[qp]*dt*gamma*kappa*tau_face[j][qp]*tau_face[i][qp];
 					  }
