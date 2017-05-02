@@ -86,6 +86,7 @@ void perform_implicit_euler (EquationSystems & es, const std::string & system_na
 // The main program.
 int main (int argc, char** argv)
 {
+  bool dampingscheme = false;
   // Initialize libMesh.
   LibMeshInit init (argc, argv);
 
@@ -160,7 +161,7 @@ int main (int argc, char** argv)
 
   // Now we begin the timestep loop to compute the time-accurate
   // solution of the equations.
-  const Real dt = 0.001;
+  const Real dt = 0.0000001;
   navier_stokes_system.time     = 0.0;
   const unsigned int n_timesteps = 15;
 
@@ -172,7 +173,6 @@ int main (int argc, char** argv)
   // We also set a standard linear solver flag in the EquationSystems object
   // which controls the maxiumum number of linear solver iterations allowed.
   equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 250;
-
   // problem specifix parameters
   equation_systems.parameters.set<double>("alpha") = 1;					// first line, coefficient of expansion
   equation_systems.parameters.set<double>("rho") = 1;					// first line, density of the fluid
@@ -192,14 +192,15 @@ int main (int argc, char** argv)
   equation_systems.parameters.set<Real> ("dt")   = dt;
 
   std::cout<<"Norm of the initial value: "<<navier_stokes_system.solution->l2_norm()<<std::endl;
-
+  auto dz = navier_stokes_system.solution->clone();
+  
   for (unsigned int t_step=0; t_step<n_timesteps; ++t_step)
     {
   //~ equation_systems.parameters.set<double>("T_Dir") = 100*t_step; 				// heating on the Dirichlet boundary
       // Incremenet the time counter, set the time step size as
       // a parameter in the EquationSystem.
       navier_stokes_system.time += dt;
-
+      
       // A pretty update message
       libMesh::out << "\n\n*** Solving time step "
                    << t_step
@@ -207,11 +208,13 @@ int main (int argc, char** argv)
                    << navier_stokes_system.time
                    << " ***"
                    << std::endl;
-
       // Now we need to update the solution vector from the
       // previous time step.  This is done directly through
       // the reference to the Stokes system.
       *navier_stokes_system.older_local_solution = *navier_stokes_system.old_local_solution;
+      //~ std::cout<<"1"<<navier_stokes_system.older_local_solution->l2_norm();
+      //~ std::cout<<"2"<<navier_stokes_system.old_local_solution->l2_norm();
+      //~ navier_stokes_system.older_local_solution = navier_stokes_system.old_local_solution->clone();
 
       // At the beginning of each solve, reset the linear solver tolerance
       // to a "reasonable" starting value.
@@ -223,68 +226,83 @@ int main (int argc, char** argv)
 	 // navier_stokes_system.old_local_solution = navier_stokes_system.current_local_solution->clone();
 	  
       navier_stokes_system.solution->zero();
-     
+      dz -> zero();
+
       // Now we begin the nonlinear loop
       for (unsigned int l=0; l<n_nonlinear_steps; ++l)
         {		  
-		  std::cout<<"Norm of the system.solution "<<navier_stokes_system.solution->l2_norm()<<std::endl;
-	      std::cout<<"Norm of the system.current_local_solution "<<navier_stokes_system.current_local_solution->l2_norm()<<std::endl;
-	      std::cout<<"Norm of the system.old_local_solution "<<navier_stokes_system.old_local_solution->l2_norm()<<std::endl;
-	      std::cout<<"Norm of the system.older_local_solution "<<navier_stokes_system.older_local_solution->l2_norm()<<std::endl;
+		  //~ std::cout<<"Norm of the system.solution "<<navier_stokes_system.solution->l2_norm()<<std::endl;
+	      //~ std::cout<<"Norm of the system.current_local_solution "<<navier_stokes_system.current_local_solution->l2_norm()<<std::endl;
+	      //~ std::cout<<"Norm of the system.old_local_solution "<<navier_stokes_system.old_local_solution->l2_norm()<<std::endl;
+	      //~ std::cout<<"Norm of the system.older_local_solution "<<navier_stokes_system.older_local_solution->l2_norm()<<std::endl;
 	      
-          // Assemble & solve the linear system to get the new Newton UPDATE!
+
+          // Assemble & solve the linear system to get the Newton UPDATE!
+	      std::cout<<"#### Solution of the Newton step system ####"<<std::endl;
 		  equation_systems.parameters.set<double>("lambda") = 0.;
           perf_log.push("linear solve");
           equation_systems.get_system("Navier-Stokes").solve();
           perf_log.pop("linear solve");
-          auto dz = navier_stokes_system.solution->clone();
 
-          
+          *dz = *navier_stokes_system.solution;
           
           double theta = 1., omega = 0., lambda = 1.;
-		  equation_systems.parameters.set<double>("lambda") = lambda;
-		  auto norm_dz = dz->l2_norm();
+          auto norm_dz = dz->l2_norm();
 		  std::cout<<"|dz|"<<norm_dz<<std::endl;
-		  do
+		  if(dampingscheme)
 		  {
-			navier_stokes_system.solution = dz->clone();
-			navier_stokes_system.current_local_solution = dz->clone();
-	        
- 		    std::cout<<"Norm of the system.solution "<<navier_stokes_system.solution->l2_norm()<<std::endl;
-	        std::cout<<"Norm of the system.current_local_solution "<<navier_stokes_system.current_local_solution->l2_norm()<<std::endl;	
-	        
-	        // solve G(z)\bar{dz} = -G(z+lambda dz);
-	        // currently old_solution = z
-	        // 			 current_solution = dz
-	        // will be used in assembly function
-	        
-			perf_log.push("linear solve");
-			equation_systems.get_system("Navier-Stokes").solve();
-			perf_log.pop("linear solve");
-			
- 		    std::cout<<"Norm of the system.solution "<<navier_stokes_system.solution->l2_norm()<<std::endl;
-	        std::cout<<"Norm of the system.current_local_solution "<<navier_stokes_system.current_local_solution->l2_norm()<<std::endl;	
-	        
-	        auto numerator = navier_stokes_system.solution->clone();
-	        numerator->add(-(1-lambda), *dz);
-	        	        
-			theta = numerator->l2_norm();
-			theta /= lambda*norm_dz;
-			std::cout<<" theta "<<theta<<std::endl;
-			
-			omega = theta / lambda*norm_dz;			
-			std::cout<<" omega "<<omega<<std::endl;
+			  do
+			  {
+				*navier_stokes_system.solution = *dz;
+				*navier_stokes_system.current_local_solution = *dz;
+				
+				//~ std::cout<<"Norm of the system.solution "<<navier_stokes_system.solution->l2_norm()<<std::endl;
+				//~ std::cout<<"Norm of the system.current_local_solution "<<navier_stokes_system.current_local_solution->l2_norm()<<std::endl;	
+				
+				// solve G(z)\bar{dz} = -G(z+lambda dz);
+				// currently old_solution = z
+				// 			 current_solution = dz
+				// will be used in assembly function
+				
+				equation_systems.parameters.set<double>("lambda") = lambda;
 
-			lambda = std::min(1., 1/(norm_dz*omega));
-			
-			std::cout<<" lambda "<<lambda<<std::endl;
-		  }while( theta >= 1. );
+				std::cout<<std::endl<<"#### Solution of the simplified Newton step system ####"<<std::endl;
+				perf_log.push("linear solve");
+				equation_systems.get_system("Navier-Stokes").solve();
+				perf_log.pop("linear solve");
+				
+				//~ std::cout<<"Norm of the system.solution "<<navier_stokes_system.solution->l2_norm()<<std::endl;
+				//~ std::cout<<"Norm of the system.current_local_solution "<<navier_stokes_system.current_local_solution->l2_norm()<<std::endl;	
+				
+				auto numerator = navier_stokes_system.solution->clone();
+				numerator->add(-(1-lambda), *dz);
+							
+				theta = numerator->l2_norm();
+				theta /= lambda*norm_dz;
+				std::cout<<" theta "<<theta<<std::endl;
+				
+				omega = theta / lambda*norm_dz;			
+				std::cout<<" omega "<<omega<<std::endl;
 
-		  navier_stokes_system.old_local_solution->add (lambda,*dz);
-//		  navier_stokes_system.old_local_solution += lambda*dz;
-
+				lambda = std::min(1., 1./(norm_dz*omega));
+				
+				std::cout<<" lambda "<<lambda<<std::endl;
+			  }while( theta >= 1 );
+		}
+		  
+		  //~ std::cout<<"old solution "<<navier_stokes_system.old_local_solution->l2_norm()<<std::endl;
+		  //~ std::cout<<"dz "<<dz->l2_norm()<<std::endl;
+		  std::cout<<"Updating the Newton iterate"<<std::endl;
+		  *dz*=lambda;
+		  
           // Compute the l2 norm of the newton update
-		  const Real norm_delta = navier_stokes_system.solution->l2_norm();
+		  const Real norm_delta = dz->l2_norm();
+		  
+		  // perform the Newton update
+		  *dz += *navier_stokes_system.old_local_solution;
+		  *navier_stokes_system.old_local_solution = *dz;
+
+
 
           // How many iterations were required to solve the linear system?
           const unsigned int n_linear_iterations = navier_stokes_system.n_linear_iterations();
@@ -534,7 +552,6 @@ void assemble_stokes (EquationSystems & es,
   // hence we use a variant of the active_elem_iterator.
   MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
   const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
-
   for ( ; el != end_el; ++el)
     {
       // Store a pointer to the element we are currently
@@ -623,6 +640,7 @@ void assemble_stokes (EquationSystems & es,
       // weight functions.
       for (unsigned int qp=0; qp<qrule.n_points(); qp++)
         {
+
           // Values to hold the solution & its gradient at the previous timestep.
           Number u = 0., u_old = 0.;
           Number v = 0., v_old = 0.;
@@ -784,7 +802,6 @@ void assemble_stokes (EquationSystems & es,
                   KvT(i,j) += JxW[qp]*(dt*tau[j][qp]*phi[i][qp]) * g_2 * alpha; // (dF_1.2/dT) (T^(i+1))
                 }
             }
-
           // Now an i-loop over the pressure degrees of freedom. 
           for (unsigned int i=0; i<n_p_dofs; i++)
             {
@@ -826,7 +843,6 @@ void assemble_stokes (EquationSystems & es,
 		    }
         } // end of the quadrature point qp-loop
 
-
       // At this point the interior element integration has
       // been completed.  However, we have not yet addressed
       // boundary conditions.  For this example we will only
@@ -846,7 +862,7 @@ void assemble_stokes (EquationSystems & es,
           if (elem->neighbor(s) == libmesh_nullptr)
             {
               UniquePtr<Elem> side (elem->build_side(s));
-			
+
               // Loop over the nodes on the side.
               for (unsigned int ns=0; ns<side->n_nodes(); ns++)
                 {
@@ -861,13 +877,22 @@ void assemble_stokes (EquationSystems & es,
                   const Real u_value = 0.;
                   // Set v = 0 everywhere
                   const Real v_value = 0.;
-                    
+					
                   // Find the node on the element matching this node on
                   // the side.  That defined where in the element matrix
                   // the boundary condition will be applied.
+                  auto sideid = side->node_id(ns);
                   for (unsigned int n=0; n<elem->n_nodes(); n++)
-                    if (elem->node_id(n) == side->node_id(ns))
+                    {
+					//~ std::cout<<"asd0"<<std::endl;
+					//~ std::cout<<"elem is "<<elem->node_id(n)<<std::endl;
+					//~ std::cout<<"ns is "<<ns<<std::endl;
+					//~ std::cout<<"side is "<<side->node_id(ns)<<std::endl;
+					//~ std::cout<<"number "<<side->n_nodes()<<std::endl;
+
+					if (elem->node_id(n) == sideid)
                       {
+
                         // Matrix contribution.
                         Kuu(n,n) += penalty;
                         Kvv(n,n) += penalty;
@@ -881,10 +906,10 @@ void assemble_stokes (EquationSystems & es,
 						    KTT(n,n) += penalty;
 						    FT(n) += penalty*T_Dir;
 						  }
-                        
-                      }                
+                      }
+				  }         
                 } // end face node loop
-                
+
               // the boundary integrals  
               const std::vector<std::vector<Real> > & tau_face = fe_face->get_phi();
               const std::vector<std::vector<RealGradient> > & dtau_face = fe_face->get_dphi();
@@ -983,7 +1008,7 @@ void assemble_stokes (EquationSystems & es,
 	  //~ std::cout<<KTT.max()<<std::endl;
 	  //~ std::cout<<Kpp.max()<<std::endl;
     } // end of element loop
-    
+
 }
 
 void perform_implicit_euler (EquationSystems & es, const std::string & system_name)
